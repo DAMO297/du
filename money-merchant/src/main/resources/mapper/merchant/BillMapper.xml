@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.money.merchant.mapper.BillMapper">
+    
+    <resultMap type="Bill" id="BillResult">
+        <result property="id"    column="id"    />
+        <result property="goodId"    column="good_id"    />
+        <result property="costId"    column="cost_id"    />
+        <result property="dailyProfit"    column="daily_profit"    />
+        <result property="monthlyProfit"    column="monthly_profit"    />
+        <result property="yearlyProfit"    column="yearly_profit"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="dateTime"    column="date_time"    />
+    </resultMap>
+
+    <resultMap id="BillGoodResult" type="Bill" extends="BillResult">
+        <collection property="goodList" ofType="Good" column="id" select="selectGoodList" />
+    </resultMap>
+
+    <resultMap type="Good" id="GoodResult">
+        <result property="id"    column="id"    />
+        <result property="productName"    column="product_name"    />
+        <result property="productCode"    column="product_code"    />
+        <result property="sizeCode"    column="size_code"    />
+        <result property="dimensions"    column="dimensions"    />
+        <result property="cost"    column="cost"    />
+        <result property="status"    column="status"    />
+        <result property="salePrice"    column="sale_price"    />
+        <result property="totalValue"    column="total_value"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="dateTime"    column="date_time"    />
+        <result property="profit"    column="profit"    />
+    </resultMap>
+
+    <sql id="selectBillVo">
+        select id, good_id, cost_id, daily_profit, monthly_profit, yearly_profit, create_time, date_time from tb_bill
+    </sql>
+
+    <select id="selectBillList" parameterType="Bill" resultMap="BillResult">
+        <include refid="selectBillVo"/>
+        <where>  
+            <if test="goodId != null "> and good_id = #{goodId}</if>
+            <if test="costId != null "> and cost_id = #{costId}</if>
+            <if test="dailyProfit != null "> and daily_profit = #{dailyProfit}</if>
+            <if test="monthlyProfit != null "> and monthly_profit = #{monthlyProfit}</if>
+            <if test="yearlyProfit != null "> and yearly_profit = #{yearlyProfit}</if>
+            <if test="dateTime != null "> and date_time = #{dateTime}</if>
+        </where>
+    </select>
+    
+    <select id="selectBillById" parameterType="Long" resultMap="BillGoodResult">
+        select id, good_id, cost_id, daily_profit, monthly_profit, yearly_profit, create_time, date_time
+        from tb_bill
+        where id = #{id}
+    </select>
+
+    <select id="selectGoodList" resultMap="GoodResult">
+        select id, product_name, product_code, size_code, dimensions, cost, status, sale_price, total_value, create_time, date_time, profit
+        from tb_good
+        where profit = #{profit}
+    </select>
+
+    <insert id="insertBill" parameterType="Bill" useGeneratedKeys="true" keyProperty="id">
+        insert into tb_bill
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="goodId != null">good_id,</if>
+            <if test="costId != null">cost_id,</if>
+            <if test="dailyProfit != null">daily_profit,</if>
+            <if test="monthlyProfit != null">monthly_profit,</if>
+            <if test="yearlyProfit != null">yearly_profit,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="dateTime != null">date_time,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="goodId != null">#{goodId},</if>
+            <if test="costId != null">#{costId},</if>
+            <if test="dailyProfit != null">#{dailyProfit},</if>
+            <if test="monthlyProfit != null">#{monthlyProfit},</if>
+            <if test="yearlyProfit != null">#{yearlyProfit},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="dateTime != null">#{dateTime},</if>
+         </trim>
+    </insert>
+
+    <update id="updateBill" parameterType="Bill">
+        update tb_bill
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="goodId != null">good_id = #{goodId},</if>
+            <if test="costId != null">cost_id = #{costId},</if>
+            <if test="dailyProfit != null">daily_profit = #{dailyProfit},</if>
+            <if test="monthlyProfit != null">monthly_profit = #{monthlyProfit},</if>
+            <if test="yearlyProfit != null">yearly_profit = #{yearlyProfit},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="dateTime != null">date_time = #{dateTime},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteBillById" parameterType="Long">
+        delete from tb_bill where id = #{id}
+    </delete>
+
+    <delete id="deleteBillByIds" parameterType="String">
+        delete from tb_bill where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+    
+    <delete id="deleteGoodByProfits" parameterType="String">
+        delete from tb_good where profit in 
+        <foreach item="profit" collection="array" open="(" separator="," close=")">
+            #{profit}
+        </foreach>
+    </delete>
+
+    <delete id="deleteGoodByProfit" parameterType="Long">
+        delete from tb_good where profit = #{profit}
+    </delete>
+
+    <insert id="batchGood">
+        insert into tb_good( id, product_name, product_code, size_code, dimensions, cost, status, sale_price, total_value, create_time, date_time, profit) values
+        <foreach item="item" index="index" collection="list" separator=",">
+            ( #{item.id}, #{item.productName}, #{item.productCode}, #{item.sizeCode}, #{item.dimensions}, #{item.cost}, #{item.status}, #{item.salePrice}, #{item.totalValue}, #{item.createTime}, #{item.dateTime}, #{item.profit})
+        </foreach>
+    </insert>
+</mapper>

@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.money.merchant.mapper.GoodMapper">
+
+    <resultMap type="Good" id="GoodResult">
+        <result property="id"    column="id"    />
+        <result property="productName"    column="product_name"    />
+        <result property="productCode"    column="product_code"    />
+        <result property="sizeCode"    column="size_code"    />
+        <result property="dimensions"    column="dimensions"    />
+        <result property="cost"    column="cost"    />
+        <result property="status"    column="status"    />
+        <result property="salePrice"    column="sale_price"    />
+        <result property="totalValue"    column="total_value"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="dateTime"    column="date_time"    />
+        <result property="profit"    column="profit"    />
+    </resultMap>
+
+    <sql id="selectGoodVo">
+        select id, product_name, product_code, size_code, dimensions, cost, status, sale_price, total_value, create_time, date_time, profit from tb_good
+    </sql>
+
+    <select id="selectGoodList" parameterType="Good" resultMap="GoodResult">
+        <include refid="selectGoodVo"/>
+        <where>
+            <if test="productName != null and productName != ''"> and product_name like concat('%', #{productName}, '%')</if>
+            <if test="createTime != null "> and create_time = #{createTime}</if>
+        </where>
+    </select>
+
+    <select id="selectGoodById" parameterType="Long" resultMap="GoodResult">
+        <include refid="selectGoodVo"/>
+        <where>
+            id = #{id}
+        </where>
+    </select>
+
+    <insert id="insertGood" parameterType="Good" useGeneratedKeys="true" keyProperty="id">
+        insert into tb_good
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="productName != null and productName != ''">product_name,</if>
+            <if test="productCode != null and productCode != ''">product_code,</if>
+            <if test="sizeCode != null">size_code,</if>
+            <if test="dimensions != null">dimensions,</if>
+            <if test="cost != null">cost,</if>
+            <if test="status != null">status,</if>
+            <if test="salePrice != null">sale_price,</if>
+            <if test="totalValue != null">total_value,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="dateTime != null">date_time,</if>
+            <if test="profit != null">profit,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="productName != null and productName != ''">#{productName},</if>
+            <if test="productCode != null and productCode != ''">#{productCode},</if>
+            <if test="sizeCode != null">#{sizeCode},</if>
+            <if test="dimensions != null">#{dimensions},</if>
+            <if test="cost != null">#{cost},</if>
+            <if test="status != null">#{status},</if>
+            <if test="salePrice != null">#{salePrice},</if>
+            <if test="totalValue != null">#{totalValue},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="dateTime != null">#{dateTime},</if>
+            <if test="profit != null">#{profit},</if>
+        </trim>
+    </insert>
+
+    <update id="updateGood" parameterType="Good">
+        update tb_good
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="productName != null and productName != ''">product_name = #{productName},</if>
+            <if test="productCode != null and productCode != ''">product_code = #{productCode},</if>
+            <if test="sizeCode != null">size_code = #{sizeCode},</if>
+            <if test="dimensions != null">dimensions = #{dimensions},</if>
+            <if test="cost != null">cost = #{cost},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="salePrice != null">sale_price = #{salePrice},</if>
+            <if test="totalValue != null">total_value = #{totalValue},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="dateTime != null">date_time = #{dateTime},</if>
+            <if test="profit != null">profit = #{profit},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteGoodById" parameterType="Long">
+        delete from tb_good where id = #{id}
+    </delete>
+
+    <delete id="deleteGoodByIds" parameterType="String">
+        delete from tb_good where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>
