@@ -95,6 +95,23 @@
         @queryTable="getList"
       ></right-toolbar>
     </el-row>
+    <!-- 利润显示 -->
+    <el-row class="profit-row">
+      <!-- 计算总利润按钮 -->
+      <el-col :span="6" class="profit-col">
+        <el-button type="primary" @click="calculateTotalProfit">
+          计算总利润
+        </el-button>
+      </el-col>
+    </el-row>
+
+    <!-- 总利润显示在按钮下方 -->
+    <el-row  class="profit-row">
+      <el-col :span="6" class="profitotal-col" >
+        <span>总利润: {{ totalProfit }}</span>
+      </el-col>
+    </el-row>
+
     <!-- 表格显示 -->
     <el-table
       v-loading="loading"
@@ -141,17 +158,7 @@
         </template>
       </el-table-column>
     </el-table>
-    <!-- 利润显示 -->
-    <el-row>
-      <el-col>
-        <el-button type="primary" @click="calculateTotalProfit"
-          >计算总利润</el-button
-        >
-      </el-col>
-      <el-col>
-        <span>总利润: {{ totalProfit }}</span>
-      </el-col>
-    </el-row>
+
     <!-- 分页组件 -->
     <pagination
       v-show="total > 0"
@@ -250,7 +257,6 @@ export default {
   computed: {
     // 过滤未售出的商品
     filteredGoods() {
-      
       return this.goodList.filter((good) => good.status != "returned");
     },
   },
@@ -397,3 +403,15 @@ export default {
   },
 };
 </script>
+<style scoped>
+利润样式 .profit-row {
+  position: absolute;
+  display: flex;
+}
+.profit-col {
+  transform: translate(1180px, -140px);
+}
+.profitotal-col {
+  transform: translate(1199px, -120px);
+}
+</style>
