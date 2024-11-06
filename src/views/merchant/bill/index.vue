@@ -15,6 +15,7 @@
           placeholder="请输入商品"
           clearable
           @keyup.enter.native="handleQuery"
+          style="width: 170px"
         />
       </el-form-item>
       <!-- 查询创建时间 -->
@@ -26,32 +27,11 @@
           value-format="yyyy-MM-dd"
           placeholder="请选择创建时间"
           @change="handleQuery"
+          style="width: 170px"
         >
         </el-date-picker>
       </el-form-item>
-      <!-- 查询一段范围的利润 -->
-      <el-form-item label="开始时间" prop="startDate">
-        <el-date-picker
-          clearable
-          v-model="queryParams.startDate"
-          type="date"
-          value-format="yyyy-MM-dd"
-          placeholder="请选择开始时间"
-          @change="handleQuery"
-        />
-      </el-form-item>
-
-      <el-form-item label="结束时间" prop="endDate">
-        <el-date-picker
-          clearable
-          v-model="queryParams.endDate"
-          type="date"
-          value-format="yyyy-MM-dd"
-          placeholder="请选择开始时间"
-          @change="handleQuery"
-        />
-      </el-form-item>
-
+      <!-- 搜索重置 -->
       <el-form-item>
         <el-button
           type="primary"
@@ -64,40 +44,33 @@
           >重置</el-button
         >
       </el-form-item>
+
+      <!-- 查询一段范围的利润 -->
+      <el-form-item label="开始时间" prop="startDate" class="profit-range">
+        <el-date-picker
+          clearable
+          v-model="queryParams.startDate"
+          type="date"
+          value-format="yyyy-MM-dd"
+          placeholder="请选择开始时间"
+          @change="handleQuery"
+        />
+      </el-form-item>
+
+      <el-form-item label="结束时间" prop="endDate" class="profit-range">
+        <el-date-picker
+          clearable
+          v-model="queryParams.endDate"
+          type="date"
+          value-format="yyyy-MM-dd"
+          placeholder="请选择开始时间"
+          @change="handleQuery"
+        />
+      </el-form-item>
     </el-form>
-    <!-- 新增 导出-->
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          plain
-          icon="el-icon-plus"
-          size="mini"
-          @click="handleAdd"
-          v-hasPermi="['merchant:good:add']"
-          >新增</el-button
-        >
-      </el-col>
-      <!-- 导出 -->
-      <el-col :span="1.5">
-        <el-button
-          type="warning"
-          plain
-          icon="el-icon-download"
-          size="mini"
-          @click="handleExport"
-          v-hasPermi="['merchant:good:export']"
-          >导出</el-button
-        >
-      </el-col>
-      <right-toolbar
-        :showSearch.sync="showSearch"
-        @queryTable="getList"
-      ></right-toolbar>
-    </el-row>
-    <!-- 利润显示 -->
+
+    <!-- 计算总利润按钮 -->
     <el-row class="profit-row">
-      <!-- 计算总利润按钮 -->
       <el-col :span="6" class="profit-col">
         <el-button type="primary" @click="calculateTotalProfit">
           计算总利润
@@ -106,12 +79,29 @@
     </el-row>
 
     <!-- 总利润显示在按钮下方 -->
-    <el-row  class="profit-row">
-      <el-col :span="6" class="profitotal-col" >
+    <el-row class="profit-row">
+      <el-col :span="6" class="profitotal-col">
         <span>总利润: {{ totalProfit }}</span>
       </el-col>
     </el-row>
-
+    <!-- 导出 -->
+    <el-col :span="1.5" class="excel">
+      <el-button
+        type="warning"
+        plain
+        icon="el-icon-download"
+        size="mini"
+        @click="handleExport"
+        v-hasPermi="['merchant:good:export']"
+        >导出</el-button
+      >
+    </el-col>
+    <!-- 隐藏搜索,刷新 -->
+    <right-toolbar
+      class="toolbar"
+      :showSearch.sync="showSearch"
+      @queryTable="getList"
+    ></right-toolbar>
     <!-- 表格显示 -->
     <el-table
       v-loading="loading"
@@ -404,14 +394,83 @@ export default {
 };
 </script>
 <style scoped>
-利润样式 .profit-row {
-  position: absolute;
+/* 容器样式 */
+.app-container {
+  padding: 20px;
+  position: relative;
+}
+
+/* 查询表单样式 */
+.el-form {
+  margin-bottom: 100px;
   display: flex;
+  flex-wrap: wrap;
 }
+
+/* 每个表单项的样式 */
+.el-form-item {
+  margin-right: 20px;
+  margin-bottom: 10px;
+}
+
+/* 搜索框和时间选择器宽度 */
+.el-input,
+.el-date-picker {
+  width: 170px;
+}
+
+/* 导出按钮样式 */
+.el-col {
+  margin-bottom: 20px;
+}
+
+/* 利润显示区 */
+.profit-row {
+  margin-top: -95.5px;
+  display: flex;
+  justify-content: flex-end; /* 右对齐 */
+  align-items: center;
+  position: relative;
+  left: 235px;
+}
+
 .profit-col {
-  transform: translate(1180px, -140px);
+  margin-right: 10px; /* 保持间距 */
 }
+
 .profitotal-col {
-  transform: translate(1199px, -120px);
+  font-size: 16px;
+  font-weight: bold;
+}
+
+/* 表格样式 */
+.el-table {
+  margin-top: 20px;
+}
+
+/* 分页组件样式 */
+.pagination {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+}
+/*利润时间范围*/
+.profit-range {
+  margin-right: 15px;
+  margin-bottom: -55px;
+  position: relative;
+  left: 0px;
+}
+/*工具栏*/
+.toolbar {
+  position: absolute;
+  top: 75px; /* 与顶部的间距 */
+  left: 25px; /* 与左侧的间距 */
+}
+/*导出*/
+.excel{
+  position: relative;
+  top: 9px; /* 与顶部的间距 */
+  left: 80px; /* 与左侧的间距 */
 }
 </style>
