@@ -194,6 +194,9 @@
         <el-form-item label="成本" prop="cost">
           <el-input v-model="form.cost" placeholder="请输入成本" />
         </el-form-item>
+        <el-form-item label="数量" prop="quantity">
+           <el-input v-model="form.quantity" type="number" placeholder="请输入数量"/>
+        </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
         <el-button type="primary" @click="submitForm">确 定</el-button>
@@ -292,6 +295,7 @@ export default {
         createTime: null,
         dateTime: null,
         profit: null,
+        quantity: 1,
       };
       this.resetForm("form");
     },
@@ -329,25 +333,48 @@ export default {
         this.title = "修改仓库";
       });
     },
+    //提交表单
     submitForm() {
-      this.$refs["form"].validate((valid) => {
-        if (valid) {
-          if (this.form.id != null) {
-            updateGood(this.form).then((response) => {
-              this.$modal.msgSuccess("修改成功");
-              this.open = false;
-              this.getList();
-            });
-          } else {
-            addGood(this.form).then((response) => {
-              this.$modal.msgSuccess("新增成功");
-              this.open = false;
-              this.getList();
-            });
-          }
-        }
-      });
-    },
+  this.$refs["form"].validate((valid) => {
+    if (valid) {
+      const quantity = this.form.quantity || 1; // 获取用户输入的数量
+      const rowsToAdd = [];
+
+      // 根据数量生成对应数量的行数据
+      for (let i = 0; i < quantity; i++) {
+        const newRow = {
+          ...this.form,  // 复制表单数据
+          productName: `${this.form.productName} (${i + 1})`,  // 可选：给商品名称添加不同编号
+          productCode: `${this.form.productCode}-${i + 1}`,  // 可选：给货号添加不同编号
+          id: this.form.id || null, // 保持现有 id 或者添加新的 id
+        };
+        rowsToAdd.push(newRow);
+      }
+
+      // 根据表单 id 来判断是新增还是修改
+      if (this.form.id != null) {
+        // 更新商品的逻辑：假设 `updateGood()` 是针对单个商品的更新
+        rowsToAdd.forEach((row) => {
+          updateGood(row).then((response) => {
+            this.$modal.msgSuccess("修改成功");
+            this.open = false;
+            this.getList();
+          });
+        });
+      } else {
+        // 新增商品的逻辑：假设 `addGood()` 是针对单个商品的新增
+        rowsToAdd.forEach((row) => {
+          addGood(row).then((response) => {
+            this.$modal.msgSuccess("新增成功");
+            this.open = false;
+            this.getList();
+          });
+        });
+      }
+    }
+  });
+},
+
     handleDelete(row) {
       const ids = row.id || this.ids;
       this.$modal

@@ -1,44 +1,21 @@
 <template>
   <div class="app-container">
+    <!-- 单号查询 -->
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px">
-      <el-form-item label="物流公司名称" prop="logisticsCompany">
-        <el-input
-          v-model="queryParams.logisticsCompany"
-          placeholder="请输入物流公司名称"
-          clearable
-          @keyup.enter.native="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="单号后四位" prop="lastFourDigits">
+      <el-form-item label="单号后四" prop="lastFourDigits">
         <el-input
           v-model="queryParams.lastFourDigits"
-          placeholder="请输入单号后四位"
+          placeholder="请输入单号后四"
           clearable
           @keyup.enter.native="handleQuery"
         />
-      </el-form-item>
-      <el-form-item label="花费金额" prop="costAmount">
-        <el-input
-          v-model="queryParams.costAmount"
-          placeholder="请输入花费金额"
-          clearable
-          @keyup.enter.native="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="修改时间" prop="dateTime">
-        <el-date-picker clearable
-          v-model="queryParams.dateTime"
-          type="date"
-          value-format="yyyy-MM-dd"
-          placeholder="请选择修改时间">
-        </el-date-picker>
       </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
         <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
       </el-form-item>
     </el-form>
-
+    <!-- 新增修改删除导出 -->
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
         <el-button
@@ -84,20 +61,25 @@
       </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
-
+    <!-- 表格 -->
     <el-table v-loading="loading" :data="costList" @selection-change="handleSelectionChange">
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="邮费主键ID" align="center" prop="id" />
-      <el-table-column label="物流公司名称" align="center" prop="logisticsCompany">
+      <el-table-column label="序号" align="center">
+        <template slot-scope="scope">
+          {{
+            (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1
+          }}
+        </template>
+      </el-table-column>
+      <el-table-column label="物流公司" align="center" prop="logisticsCompany">
         <template slot-scope="scope">
           <dict-tag :options="dict.type.tb_name" :value="scope.row.logisticsCompany"/>
         </template>
       </el-table-column>
-      <el-table-column label="单号后四位" align="center" prop="lastFourDigits" />
-      <el-table-column label="花费金额" align="center" prop="costAmount" />
-      <el-table-column label="修改时间" align="center" prop="dateTime" width="180">
+      <el-table-column label="单号后四" align="center" prop="lastFourDigits" />
+      <el-table-column label="开销" align="center" prop="costAmount" />
+      <el-table-column label="创建时间" align="center" prop="createTime" width="180">
         <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.dateTime, '{y}-{m}-{d}') }}</span>
+          <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
@@ -119,7 +101,7 @@
         </template>
       </el-table-column>
     </el-table>
-    
+    <!-- 分页 -->
     <pagination
       v-show="total>0"
       :total="total"
@@ -131,22 +113,21 @@
     <!-- 添加或修改邮费对话框 -->
     <el-dialog :title="title" :visible.sync="open" width="500px" append-to-body>
       <el-form ref="form" :model="form" :rules="rules" label-width="80px">
-        <el-form-item label="物流公司名称" prop="logisticsCompany">
-          <el-input v-model="form.logisticsCompany" placeholder="请输入物流公司名称" />
+        <el-form-item label="物流公司" prop="logisticsCompany">
+          <el-select v-model="form.logisticsCompany" placeholder="请选择物流公司">
+            <el-option
+              v-for="dict in dict.type.tb_name"
+              :key="dict.value"
+              :label="dict.label"
+              :value="dict.value"
+            ></el-option>
+          </el-select>
         </el-form-item>
-        <el-form-item label="单号后四位" prop="lastFourDigits">
-          <el-input v-model="form.lastFourDigits" placeholder="请输入单号后四位" />
+        <el-form-item label="单号后四" prop="lastFourDigits">
+          <el-input v-model="form.lastFourDigits" placeholder="请输入单号后四" />
         </el-form-item>
-        <el-form-item label="花费金额" prop="costAmount">
-          <el-input v-model="form.costAmount" placeholder="请输入花费金额" />
-        </el-form-item>
-        <el-form-item label="修改时间" prop="dateTime">
-          <el-date-picker clearable
-            v-model="form.dateTime"
-            type="date"
-            value-format="yyyy-MM-dd"
-            placeholder="请选择修改时间">
-          </el-date-picker>
+        <el-form-item label="开销" prop="costAmount">
+          <el-input v-model="form.costAmount" placeholder="请输入开销" />
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -162,6 +143,7 @@ import { listCost, getCost, delCost, addCost, updateCost } from "@/api/merchant/
 
 export default {
   name: "Cost",
+  dicts: ['tb_name'],
   data() {
     return {
       // 遮罩层
@@ -186,26 +168,20 @@ export default {
       queryParams: {
         pageNum: 1,
         pageSize: 10,
-        logisticsCompany: null,
         lastFourDigits: null,
-        costAmount: null,
-        dateTime: null
       },
       // 表单参数
       form: {},
       // 表单校验
       rules: {
         logisticsCompany: [
-          { required: true, message: "物流公司名称不能为空", trigger: "blur" }
+          { required: true, message: "物流公司不能为空", trigger: "blur" }
         ],
         lastFourDigits: [
-          { required: true, message: "单号后四位不能为空", trigger: "blur" }
+          { required: true, message: "单号后四不能为空", trigger: "blur" }
         ],
         costAmount: [
-          { required: true, message: "花费金额不能为空", trigger: "blur" }
-        ],
-        createTime: [
-          { required: true, message: "创建时间不能为空", trigger: "blur" }
+          { required: true, message: "开销不能为空", trigger: "blur" }
         ],
       }
     };

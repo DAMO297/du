@@ -56,7 +56,6 @@
           @change="handleQuery"
         />
       </el-form-item>
-
       <el-form-item label="结束时间" prop="endDate" class="profit-range">
         <el-date-picker
           clearable
@@ -69,7 +68,7 @@
       </el-form-item>
     </el-form>
 
-    <!-- 计算总利润按钮 -->
+    <!-- 计算总利润 -->
     <el-row class="profit-row">
       <el-col :span="6" class="profit-col">
         <el-button type="primary" @click="calculateTotalProfit">
@@ -78,7 +77,7 @@
       </el-col>
     </el-row>
 
-    <!-- 总利润显示在按钮下方 -->
+    <!-- 总利润显示 -->
     <el-row class="profit-row">
       <el-col :span="6" class="profitotal-col">
         <span>总利润: {{ totalProfit }}</span>
@@ -102,6 +101,7 @@
       :showSearch.sync="showSearch"
       @queryTable="getList"
     ></right-toolbar>
+ 
     <!-- 表格显示 -->
     <el-table
       v-loading="loading"
@@ -136,6 +136,7 @@
       </el-table-column>
 
       <el-table-column label="成本" align="center" prop="cost" />
+      <el-table-column label="售价" align="center" prop="salePrice" />
       <el-table-column label="利润" align="center" prop="profit" />
       <el-table-column
         label="操作时间"
@@ -145,6 +146,25 @@
       >
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.createTime, "{y}-{m}-{d}") }}</span>
+        </template>
+    <!-- 修改删除 -->
+        <template slot-scope="scope">
+          <el-button
+            size="mini"
+            type="text"
+            icon="el-icon-edit"
+            @click="handleUpdate(scope.row)"
+            v-hasPermi="['merchant:good:edit']"
+            >修改</el-button
+          >
+          <el-button
+            size="mini"
+            type="text"
+            icon="el-icon-delete"
+            @click="handleDelete(scope.row)"
+            v-hasPermi="['merchant:good:remove']"
+            >删除</el-button
+          >
         </template>
       </el-table-column>
     </el-table>
@@ -189,6 +209,12 @@
         </el-form-item>
         <el-form-item label="成本" prop="cost">
           <el-input v-model="form.cost" placeholder="请输入成本" />
+        </el-form-item >
+        <el-form-item label="售价" prop="salePrice">
+          <el-input v-model="form.salePrice" placeholder="请输入售价" />
+        </el-form-item>
+        <el-form-item label="利润" prop="profit">
+          <el-input v-model="form.profit" placeholder="请输入利润" />
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -224,7 +250,7 @@ export default {
       open: false,
       queryParams: {
         pageNum: 1,
-        pageSize: 20,
+        pageSize: 50,
         productName: null,
         createTime: null,
         startDate: null,
@@ -245,9 +271,21 @@ export default {
   },
   created() {},
   computed: {
-    // 过滤未售出的商品
+    // 过滤符合时间范围的商品
     filteredGoods() {
-      return this.goodList.filter((good) => good.status != "returned");
+      let goods = this.goodList;
+
+      if (this.queryParams.startDate && this.queryParams.endDate) {
+        const startDate = this.queryParams.startDate;
+        const endDate = this.queryParams.endDate;
+        goods = goods.filter((good) => {
+          const createTime = good.createTime.split(" ")[0];
+          console.log(createTime, startDate, endDate);
+
+          return createTime >= startDate && createTime <= endDate;
+        });
+      }
+      return goods;
     },
   },
   created() {
@@ -256,7 +294,16 @@ export default {
   methods: {
     getList() {
       this.loading = true;
-      listGood(this.queryParams).then((response) => {
+      // 在获取列表之前检查是否有时间范围的选择
+      let filteredParams = { ...this.queryParams };
+
+      if (this.queryParams.startDate && this.queryParams.endDate) {
+        // 将日期范围加入过滤参数
+        filteredParams.startDate = this.queryParams.startDate;
+        filteredParams.endDate = this.queryParams.endDate;
+      }
+
+      listGood(filteredParams).then((response) => {
         this.goodList = response.rows.map((item) => ({
           ...item,
           isSold: item.isSold || false, // 添加 isSold 字段的默认值
@@ -383,15 +430,54 @@ export default {
         `good_${new Date().getTime()}.xlsx`
       );
     },
-    // 计算总利润
-    calculateTotalProfit() {
-      this.totalProfit = this.filteredGoods.reduce(
-        (acc, good) => acc + parseFloat(good.profit || 0),
-        0
-      );
+    //获取所有商品数据
+    async fetchAllGoods(){
+      try{
+        const response = await listGood({pageNum: 1, pageSize: 99999})
+        return response.rows;
+      }catch(error){
+        console.error("获取商品列表时发生错误：", error);
+        return [];
+      }
     },
+    // 计算总利润
+    async calculateTotalProfit() {
+  try {
+    // 获取所有商品
+    const allGoods = await this.fetchAllGoods();
+
+    // 如果有选择时间范围，进行过滤
+    let filteredGoods = allGoods;
+
+    if (this.queryParams.startDate && this.queryParams.endDate) {
+      const startDate = this.queryParams.startDate;
+      const endDate = this.queryParams.endDate;
+
+      // 过滤商品，确保它们的 `createTime` 在选择的时间范围内
+      filteredGoods = filteredGoods.filter(good => {
+        const createTime = good.createTime.split(" ")[0]; // 提取日期部分
+        return createTime >= startDate && createTime <= endDate;
+      });
+    }
+
+    // 计算符合条件商品的总利润
+    this.totalProfit = filteredGoods.reduce((total, good) => {
+      return total + (good.profit || 0);
+    }, 0);
+
+  } catch (error) {
+    console.error("计算利润时发生错误：", error);
+  }
+},
+    // 初始化页面时，计算总利润
+  async mounted() {
+    await this.calculateTotalProfit();
+  },
+ 
+
   },
 };
+
 </script>
 <style scoped>
 /* 容器样式 */
@@ -468,7 +554,7 @@ export default {
   left: 25px; /* 与左侧的间距 */
 }
 /*导出*/
-.excel{
+.excel {
   position: relative;
   top: 9px; /* 与顶部的间距 */
   left: 80px; /* 与左侧的间距 */
