@@ -137,7 +137,12 @@
 
       <el-table-column label="成本" align="center" prop="cost" />
       <el-table-column label="售价" align="center" prop="salePrice" />
-      <el-table-column label="利润" align="center" prop="profit" />
+      <el-table-column label="利润" align="center" prop="profit">
+        <template slot-scope="scope">
+          <!-- If profit is 0, display "未售", else display the actual profit -->
+          <span>{{ scope.row.profit === 0 ? '未售' : scope.row.profit }}</span>
+        </template>
+      </el-table-column>
       <el-table-column
         label="操作时间"
         align="center"

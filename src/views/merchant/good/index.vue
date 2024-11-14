@@ -7,10 +7,11 @@
       :inline="true"
       v-show="showSearch"
       label-width="68px"
-    >   
+    >
       <!-- 输入商品 -->
       <el-form-item label="商品" prop="productName">
         <el-input
+          id="productName"
           v-model="queryParams.productName"
           placeholder="请输入商品"
           clearable
@@ -21,6 +22,7 @@
       <el-form-item label="创建时间" prop="createTime">
         <el-date-picker
           clearable
+          id="createTime"
           v-model="queryParams.createTime"
           type="date"
           value-format="yyyy-MM-dd"
@@ -43,7 +45,7 @@
         >
       </el-form-item>
     </el-form>
-       <!-- 新增 导出 -->
+    <!-- 新增 导出 -->
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
         <el-button
@@ -54,10 +56,9 @@
           @click="handleAdd"
           v-hasPermi="['merchant:good:add']"
           >新增
-        </el-button
-        >
+        </el-button>
       </el-col>
-      
+
       <el-col :span="1.5">
         <el-button
           type="warning"
@@ -74,7 +75,7 @@
         @queryTable="getList"
       ></right-toolbar>
     </el-row>
-      <!-- 表单 -->
+    <!-- 表单 -->
     <el-table
       v-loading="loading"
       :data="filteredGoods"
@@ -83,7 +84,9 @@
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" align="center">
         <template slot-scope="scope">
-          {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
+          {{
+            (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1
+          }}
         </template>
       </el-table-column>
       <el-table-column label="商品" align="center" prop="productName" />
@@ -149,18 +152,26 @@
             v-hasPermi="['merchant:good:sell']"
             >售出
           </el-button>
+          <el-button
+            size="mini"
+            type="text"
+            icon="el-icon-plus"
+            @click="handleIncreaseQuantity(scope.row)"
+            v-hasPermi="['merchant:good:add']"
+            >增加货量</el-button
+          >
         </template>
       </el-table-column>
     </el-table>
 
     <!-- 自定义分页组件 -->
-    <pagination 
+    <!-- <pagination 
       v-show="total > 0"
       :total="total"
       :page.sync="queryParams.pageNum"
       :limit.sync="queryParams.pageSize"
       @pagination="getList"
-    />
+    /> -->
 
     <!-- 添加或修改仓库对话框 -->
     <el-dialog :title="title" :visible.sync="open" width="500px" append-to-body>
@@ -195,7 +206,11 @@
           <el-input v-model="form.cost" placeholder="请输入成本" />
         </el-form-item>
         <el-form-item label="数量" prop="quantity">
-           <el-input v-model="form.quantity" type="number" placeholder="请输入数量"/>
+          <el-input
+            v-model="form.quantity"
+            type="number"
+            placeholder="请输入数量"
+          />
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -207,7 +222,7 @@
 </template>
 
 <script>
-    // api接口
+// api接口
 import {
   listGood,
   getGood,
@@ -233,7 +248,7 @@ export default {
       queryParams: {
         displayId: null,
         pageNum: 1,
-        pageSize: 30,
+        pageSize: 100,
         productName: null,
         createTime: null,
         selectedDate: null,
@@ -318,6 +333,7 @@ export default {
       //this.status = returned;
       this.multiple = !selection.length;
     },
+    //增加货量
     handleAdd() {
       this.reset();
       this.open = true;
@@ -333,9 +349,9 @@ export default {
         this.title = "修改仓库";
       });
     },
-    //提交表单
+    // 提交表单
     submitForm() {
-  this.$refs["form"].validate((valid) => {
+    this.$refs["form"].validate((valid) => {
     if (valid) {
       const quantity = this.form.quantity || 1; // 获取用户输入的数量
       const rowsToAdd = [];
@@ -343,38 +359,54 @@ export default {
       // 根据数量生成对应数量的行数据
       for (let i = 0; i < quantity; i++) {
         const newRow = {
-          ...this.form,  // 复制表单数据
-          productName: `${this.form.productName} (${i + 1})`,  // 可选：给商品名称添加不同编号
-          productCode: `${this.form.productCode}-${i + 1}`,  // 可选：给货号添加不同编号
-          id: this.form.id || null, // 保持现有 id 或者添加新的 id
+          ...this.form, // 复制表单数据
+          productName: `${this.form.productName} (${i + 1})`, // 给商品名称添加不同编号
+          productCode: `${this.form.productCode}-${i + 1}`, // 给货号添加不同编号
         };
+
+        // 如果是新增操作，确保 id 为 null
+        if (this.form.id == null) {
+          newRow.id = null; // 确保新增时 id 为 null
+        } else {
+          // 修改操作保持现有的 id
+          newRow.id = this.form.id;
+        }
+
         rowsToAdd.push(newRow);
       }
 
-      // 根据表单 id 来判断是新增还是修改
-      if (this.form.id != null) {
-        // 更新商品的逻辑：假设 `updateGood()` 是针对单个商品的更新
-        rowsToAdd.forEach((row) => {
-          updateGood(row).then((response) => {
-            this.$modal.msgSuccess("修改成功");
-            this.open = false;
-            this.getList();
-          });
-        });
-      } else {
-        // 新增商品的逻辑：假设 `addGood()` 是针对单个商品的新增
-        rowsToAdd.forEach((row) => {
-          addGood(row).then((response) => {
+      // 判断操作类型：根据表单 id 决定是新增还是修改
+      if (this.form.id == null) {
+        // 批量新增商品
+        Promise.all(
+          rowsToAdd.map(row => addGood(row))
+        )
+          .then(() => {
             this.$modal.msgSuccess("新增成功");
-            this.open = false;
-            this.getList();
+            this.open = false; // 关闭弹窗
+            this.getList(); // 刷新列表
+          })
+          .catch((error) => {
+            this.$modal.msgError("新增失败");
           });
-        });
+      } else {
+        // 批量修改商品
+        Promise.all(
+          rowsToAdd.map(row => updateGood(row))
+        )
+          .then(() => {
+            this.$modal.msgSuccess("修改成功");
+            this.open = false; // 关闭弹窗
+            this.getList(); // 刷新列表
+          })
+          .catch((error) => {
+            this.$modal.msgError("修改失败");
+          });
       }
     }
   });
-},
-
+    },
+    //删除
     handleDelete(row) {
       const ids = row.id || this.ids;
       this.$modal
@@ -386,7 +418,7 @@ export default {
         })
         .catch(() => {});
     },
-
+    //导出
     handleExport() {
       this.download(
         "merchant/good/export",
@@ -431,6 +463,15 @@ export default {
       fetchTotalProfit(this.queryParams.selectedDate).then((profit) => {
         this.totalProfit = profit; //更新总利润
       });
+    },
+    //保留数据增加操作
+    handleIncreaseQuantity(row) {
+      this.reset(); // 重置表单内容
+      this.open = true; // 打开对话框
+      this.title = "增加货量"; // 设置对话框标题
+      
+      this.isAdding = true; // 标记为增加操作
+      this.form = { ...row, id: null };
     },
   },
 };
