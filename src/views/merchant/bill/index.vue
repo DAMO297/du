@@ -18,6 +18,16 @@
           style="width: 170px"
         />
       </el-form-item>
+      <!-- 查询货号 -->
+      <el-form-item label="货号" prop="productCode">
+        <el-input
+          id="productCode"
+          v-model="queryParams.productCode"
+          placeholder="请输入货号"
+          clearable
+          @keyup.enter.native="handleQuery"
+        />
+    </el-form-item>
       <!-- 查询创建时间 -->
       <el-form-item label="创建时间" prop="createTime">
         <el-date-picker
@@ -487,37 +497,37 @@ export default {
 <style scoped>
 /* 容器样式 */
 .app-container {
-  padding: 20px;
+  padding: 16.5px;
   position: relative;
 }
 
 /* 查询表单样式 */
 .el-form {
-  margin-bottom: 100px;
+  margin-bottom: 123px;
   display: flex;
   flex-wrap: wrap;
 }
 
 /* 每个表单项的样式 */
 .el-form-item {
-  margin-right: 20px;
+  margin-right: 15px;
   margin-bottom: 10px;
 }
 
 /* 搜索框和时间选择器宽度 */
 .el-input,
 .el-date-picker {
-  width: 170px;
+  width: 165px;
 }
 
 /* 导出按钮样式 */
 .el-col {
-  margin-bottom: 20px;
+  margin-bottom: 17px;
 }
 
 /* 利润显示区 */
 .profit-row {
-  margin-top: -95.5px;
+  margin-top: -88.5px;
   display: flex;
   justify-content: flex-end; /* 右对齐 */
   align-items: center;
@@ -555,13 +565,14 @@ export default {
 /*工具栏*/
 .toolbar {
   position: absolute;
-  top: 75px; /* 与顶部的间距 */
+  top: 90px; /* 与顶部的间距 */
   left: 25px; /* 与左侧的间距 */
 }
 /*导出*/
 .excel {
   position: relative;
-  top: 9px; /* 与顶部的间距 */
+  top: -4px; /* 与顶部的间距 */
   left: 80px; /* 与左侧的间距 */
+  flex-wrap: wrap;
 }
 </style>

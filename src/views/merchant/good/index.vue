@@ -8,7 +8,7 @@
       v-show="showSearch"
       label-width="68px"
     >
-      <!-- 输入商品 -->
+      <!-- 查询商品 -->
       <el-form-item label="商品" prop="productName">
         <el-input
           id="productName"
@@ -17,6 +17,16 @@
           clearable
           @keyup.enter.native="handleQuery"
         />
+       <!-- 查询货号 -->
+      </el-form-item>  
+      <el-form-item label="货号" prop="productCode">
+          <el-input
+            id="productCode"
+            v-model="queryParams.productCode"
+            placeholder="请输入货号"
+            clearable
+            @keyup.enter.native="handleQuery"
+          />
       </el-form-item>
       <!-- 查询创建时间 -->
       <el-form-item label="创建时间" prop="createTime">
@@ -250,6 +260,7 @@ export default {
         pageNum: 1,
         pageSize: 100,
         productName: null,
+        productCode: null,
         createTime: null,
         selectedDate: null,
         profitDate: null,
