@@ -14,6 +14,37 @@
         <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
         <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
       </el-form-item>
+      <!-- 开始时间 -->
+      <el-form-item label="开始时间" prop="startDate" class="cost-range">
+        <el-date-picker
+        v-model="queryParams.startDate"
+        placeholder="请选择结束时间"
+        clearable
+        @change="handleQuery"/>
+      </el-form-item>
+      <!-- 结束时间 -->
+      <el-form-item label="结束时间" prop="endDate"  class="cost-range">
+        <el-date-picker
+        v-model="queryParams.endDate"
+        placeholder="请选择结束时间"
+        clearable
+        @change="handleQuery"/>
+      </el-form-item>  
+      <!-- 计算总利润 -->
+      <el-row class="cost-row">
+      <el-col :span="6" class="cost-col">
+        <el-button type="primary" @click="calculateTotalCost">
+          计算总利润
+        </el-button>
+      </el-col>
+      </el-row>
+      <!-- 总利润显示 -->
+      <el-row class="cost-row">
+      <el-col :span="6" class="cost-col">
+        <span>总利润: {{ totalCost }}</span>
+      </el-col>
+      </el-row>
+
     </el-form>
     <!-- 新增修改删除导出 -->
     <el-row :gutter="10" class="mb8">
@@ -169,7 +200,10 @@ export default {
         pageNum: 1,
         pageSize: 10,
         lastFourDigits: null,
+        startDate:null,
+        endDate: null,
       },
+      totalCost: 0,
       // 表单参数
       form: {},
       // 表单校验
@@ -283,7 +317,48 @@ export default {
       this.download('merchant/cost/export', {
         ...this.queryParams
       }, `cost_${new Date().getTime()}.xlsx`)
+    },
+    //获取所有列表开销
+    async fetchAllCosts() { 
+      try{
+          const response = await listCost({pageNum:1,pageSize: 10})
+          return response.rows;
+      }catch(error){
+          console.error("获取开销列表时发生错误: ",error);
+          return [];
+      }
+    },
+    // 计算总开销
+    async calculateTotalCost() {
+  try {
+    // 获取所有商品
+    const allCost = await this.fetchAllCosts();
+
+    // 如果有选择时间范围，进行过滤
+    let filteredCosts = allCost;
+
+    if (this.queryParams.startDate && this.queryParams.endDate) {
+      const startDate = this.queryParams.startDate;
+      const endDate = this.queryParams.endDate;
+
+      // 过滤商品，确保它们的 `createTime` 在选择的时间范围内
+      filteredCosts = filteredCosts.filter(cost => {
+        const createTime = cost.createTime.split(" ")[0]; // 提取日期部分
+        return createTime >= startDate && createTime <= endDate;
+      });
     }
+
+    // 计算符合条件商品的总利润
+    this.totalCost = filteredCosts.reduce((total, cost) => {
+      return total + (parseFloat(cost.costAmount) || 0);
+    }, 0);
+    this.$message.success("总开销计算成功")
+  } catch (error) {
+    console.error("计算开销时发生错误：", error);
+    this.$message.error("计算总开销失败,请重试! ");
+  }
+},
+
   }
 };
 </script>
