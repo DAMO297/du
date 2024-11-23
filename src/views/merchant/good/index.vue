@@ -9,16 +9,23 @@
       label-width="68px"
     >
       <!-- 查询商品 -->
-      <el-form-item label="商品" prop="productName">
-        <el-input
-          id="productName"
-          v-model="queryParams.productName"
-          placeholder="请输入商品"
-          clearable
-          @keyup.enter.native="handleQuery"
-        />
-       <!-- 查询货号 -->
-      </el-form-item>  
+      
+        <el-form-item label="商品" prop="productName" >
+          <el-input
+            id="productName"
+            v-model="queryParams.productName"
+            :fetch-suggestions="fetchSuggestions"
+            placeholder="请输入商品"
+            clearable
+            @keyup.enter.native="handleQuery"
+            autocomplete="on"
+            name="productName"
+            popper-classes="custom-autocomplete-dropdown"
+          />
+        </el-form-item>
+      
+        
+      <!-- 查询货号 -->
       <el-form-item label="货号" prop="productCode">
           <el-input
             id="productCode"
@@ -259,7 +266,7 @@ export default {
         displayId: null,
         pageNum: 1,
         pageSize: 100,
-        productName: null,
+        productName: '',
         productCode: null,
         createTime: null,
         selectedDate: null,
@@ -288,6 +295,10 @@ export default {
   },
   created() {
     this.getList();
+    const savedProductName = sessionStorage.getItem('productName');
+    if (savedProductName) {
+      this.queryParams.productName = savedProductName; // Set the saved value to the input field
+    }
   },
   methods: {
     getList() {
@@ -335,6 +346,9 @@ export default {
       this.getList();
     },
     resetQuery() {
+      if (this.queryParams.productName) {
+        sessionStorage.setItem('productName', this.queryParams.productName); // Save input to sessionStorage
+      }
       this.resetForm("queryForm");
       this.handleQuery();
     },
@@ -484,6 +498,24 @@ export default {
       this.isAdding = true; // 标记为增加操作
       this.form = { ...row, id: null };
     },
+    fetchSuggestions(queryString, cb) {
+      const suggestions = this.getSuggestions(queryString); // Assume this returns a list of suggestions
+      cb(suggestions);
+    },
+
+    // Dummy function for generating suggestions
+    getSuggestions(query) {
+      // You can replace this with an actual API call or static data
+      return [
+        { value: 'Product 1' },
+        { value: 'Product 2' },
+        { value: 'Product 3' },
+      ].filter((item) => item.value.toLowerCase().includes(query.toLowerCase()));
+    },
   },
 };
 </script>
+
+<style scoped>
+
+</style>
