@@ -61,12 +61,15 @@
           >重置</el-button
         >
       </el-form-item>
+<<<<<<< HEAD
       <!-- 总货值显示 -->
        <el-row class="good-cost">
         <el-col :span="6">
           <span>总货值: {{totalCost.toFixed(2)}}</span>
         </el-col>
        </el-row>
+=======
+>>>>>>> dd2326b069decf9bcc878e12a4589ff2101cb2ab
     </el-form>
     <!-- 新增 导出 -->
     <el-row :gutter="10" class="mb8">
