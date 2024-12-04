@@ -9,8 +9,7 @@
       label-width="68px"
     >
       <!-- 查询商品 -->
-      
-        <el-form-item label="商品" prop="productName" >
+      <el-form-item label="商品" prop="productName" >
           <el-input
             id="productName"
             v-model="queryParams.productName"
@@ -22,9 +21,7 @@
             name="productName"
             popper-classes="custom-autocomplete-dropdown"
           />
-        </el-form-item>
-      
-        
+      </el-form-item>   
       <!-- 查询货号 -->
       <el-form-item label="货号" prop="productCode">
           <el-input
@@ -61,18 +58,15 @@
           >重置</el-button
         >
       </el-form-item>
-<<<<<<< HEAD
       <!-- 总货值显示 -->
        <el-row class="good-cost">
         <el-col :span="6">
           <span>总货值: {{totalCost.toFixed(2)}}</span>
         </el-col>
        </el-row>
-=======
->>>>>>> dd2326b069decf9bcc878e12a4589ff2101cb2ab
-    </el-form>
-    <!-- 新增 导出 -->
-    <el-row :gutter="10" class="mb8">
+      </el-form>
+      <!-- 新增 导出 -->
+      <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
         <el-button
           type="primary"
@@ -96,7 +90,39 @@
           >导出</el-button
         >
       </el-col>
-      <right-toolbar
+
+      <el-col :span="1.5">
+          <el-button
+            type="primary"
+            plain
+            @click="filterByCategory('shoes')"
+            size="mini"
+          >
+            鞋子
+          </el-button>
+      </el-col>
+      <el-col :span="1.5">
+          <el-button
+            type="primary"
+            plain
+            @click="filterByCategory('clothing')"
+            size="mini"
+          >
+            服饰
+          </el-button>
+      </el-col>
+      <el-col :span="1.5">
+          <el-button
+            type="primary"
+            plain
+            @click="filterByCategory('other')"
+            size="mini"
+          >
+            其他
+          </el-button>
+      </el-col>
+
+          <right-toolbar
         :showSearch.sync="showSearch"
         @queryTable="getList"
       ></right-toolbar>
@@ -284,6 +310,7 @@ export default {
       productCount: 0, // 用于存储商品条数
       totalProfit: 0, // 用于存储总利润
       totalCost: 0, //用于存储货值
+      filterCategory: null, //新增筛选类型状态
       form: {},
       rules: {
         productName: [
@@ -299,8 +326,28 @@ export default {
   created() {},
   computed: {
     filteredGoods() {
+      // 过滤商品列表
+      let filtered = this.goodList;
+      filtered = this.goodList.filter((good)=>good.status !== "sold");
+      if (this.filterCategory === 'shoes') {
+        //筛选出有码数或尺寸的商品
+        filtered = filtered.filter(
+          (good) => good.sizeCode || good.dimensions
+        );
+      } else if (this.filterCategory === 'clothing') {
+        //筛选出没有码数和尺寸的商品
+        filtered = filtered.filter(
+          (good) => !good.sizeCode && good.dimensions
+        );
+      } else if(this.filterCategory === 'other') {
+        //筛选出没有码数和尺寸的商品
+         filtered = filtered.filter(
+          (good) => !good.sizeCode && !good.dimensions
+         );
+      }
+
       // 过滤已售出的商品
-      return this.goodList.filter((good) => good.status !== "sold");
+      return filtered;
     },
   },
   created() {
@@ -311,6 +358,11 @@ export default {
     }
   },
   methods: {
+    //按照分类过滤商品
+    filterByCategory(category) {
+      this.filterCategory = category; //设置当前筛选类别
+      this.getList(); //刷新商品列表
+    },
     getList() {
       this.loading = true;
       listGood(this.queryParams).then((response) => {
