@@ -1,100 +1,112 @@
 <template>
   <div class="app-container">
-    <el-form
-      :model="queryParams"
-      ref="queryForm"
-      size="small"
-      :inline="true"
-      v-show="showSearch"
-      label-width="68px"
-    >
-      <!-- 商品输入框 -->
-      <el-form-item label="商品" prop="productName">
-        <el-input
-          v-model="queryParams.productName"
-          placeholder="请输入商品"
-          clearable
-          @keyup.enter.native="handleQuery"
-          style="width: 170px"
-        />
-      </el-form-item>
-      <!-- 查询货号 -->
-      <el-form-item label="货号" prop="productCode">
-        <el-input
-          id="productCode"
-          v-model="queryParams.productCode"
-          placeholder="请输入货号"
-          clearable
-          @keyup.enter.native="handleQuery"
-        />
-    </el-form-item>
-      <!-- 查询创建时间 -->
-      <el-form-item label="创建时间" prop="createTime">
-        <el-date-picker
-          clearable
-          v-model="queryParams.createTime"
-          type="date"
-          value-format="yyyy-MM-dd"
-          placeholder="请选择创建时间"
-          @change="handleQuery"
-          style="width: 170px"
-        >
-        </el-date-picker>
-      </el-form-item>
-      <!-- 搜索重置 -->
-      <el-form-item>
-        <el-button
-          type="primary"
-          icon="el-icon-search"
-          size="mini"
-          @click="handleQuery"
-          >搜索</el-button
-        >
-        <el-button icon="el-icon-refresh" size="mini" @click="resetQuery"
-          >重置</el-button
-        >
-      </el-form-item>
+    <!-- 第一个容器：商品框，货号，创建时间，搜索和重置 -->
+    <div class="search-container">
+      <el-form
+        :model="queryParams"
+        ref="queryForm"
+        size="small"
+        :inline="true"
+        v-show="showSearch"
+        label-width="68px"
+        class="search-form"
+      >
+        <div class="search-items">
+          <!-- 商品输入框 -->
+          <el-form-item label="商品" prop="productName">
+            <el-input
+              v-model="queryParams.productName"
+              placeholder="请输入商品"
+              clearable
+              @keyup.enter.native="handleQuery"
+              style="width: 170px"
+            />
+          </el-form-item>
 
-      <!-- 查询一段范围的利润 -->
-      <el-form-item label="开始时间" prop="startDate" class="profit-range">
-        <el-date-picker
-          clearable
-          v-model="queryParams.startDate"
-          type="date"
-          value-format="yyyy-MM-dd"
-          placeholder="请选择开始时间"
-          @change="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="结束时间" prop="endDate" class="profit-range">
-        <el-date-picker
-          clearable
-          v-model="queryParams.endDate"
-          type="date"
-          value-format="yyyy-MM-dd"
-          placeholder="请选择开始时间"
-          @change="handleQuery"
-        />
-      </el-form-item>
-    </el-form>
+          <!-- 查询货号 -->
+          <el-form-item label="货号" prop="productCode">
+            <el-input
+              id="productCode"
+              v-model="queryParams.productCode"
+              placeholder="请输入货号"
+              clearable
+              @keyup.enter.native="handleQuery"
+            />
+          </el-form-item>
 
-    <!-- 计算总利润 -->
-    <el-row class="profit-row">
-      <el-col :span="6" class="profit-col">
+          <!-- 查询创建时间 -->
+          <el-form-item label="创建时间" prop="createTime">
+            <el-date-picker
+              clearable
+              v-model="queryParams.createTime"
+              type="date"
+              value-format="yyyy-MM-dd"
+              placeholder="请选择创建时间"
+              @change="handleQuery"
+              style="width: 170px"
+            />
+          </el-form-item>
+
+          <!-- 搜索重置 -->
+          <el-form-item class="form-actions">
+            <el-button
+              type="primary"
+              icon="el-icon-search"
+              size="mini"
+              @click="handleQuery"
+            >搜索</el-button>
+            <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">
+              重置
+            </el-button>
+          </el-form-item>
+        </div>
+      </el-form>
+    </div>
+  
+
+    <!-- 第二个容器：时间范围，计算总利润，显示总利润 -->
+    <div class="profit-container">
+      <el-form :model="queryParams"  class="profit-form">
+        <!-- 查询一段范围的利润 -->
+        <el-form-item label="利润" label-width="53px" class="profit-range">
+          <el-row gutter="4">
+            <el-col :span="10">
+              <el-date-picker
+                clearable
+                v-model="queryParams.startDate"
+                type="date"
+                value-format="yyyy-MM-dd"
+                placeholder="请选择开始时间"
+                @change="handleQuery"
+                style="width: 87%;"
+              />
+            </el-col>
+            <el-col :span="10">
+              <el-date-picker
+                clearable
+                v-model="queryParams.endDate"
+                type="date"
+                value-format="yyyy-MM-dd"
+                placeholder="请选择结束时间"
+                @change="handleQuery"
+                style="width: 100%;"
+              />
+            </el-col>
+          </el-row>
+        </el-form-item>
+      </el-form>
+
+      <!-- 利润计算 -->
+      <div class="profit-actions">
         <el-button type="primary" @click="calculateTotalProfit">
           计算总利润
         </el-button>
-      </el-col>
-    </el-row>
+        <span class="total-profit">总利润: {{ totalProfit }}</span>
+      </div>
+    </div>
 
-    <!-- 总利润显示 -->
-    <el-row class="profit-row">
-      <el-col :span="6" class="profitotal-col">
-        <span>总利润: {{ totalProfit }}</span>
-      </el-col>
-    </el-row>
-    <!-- 导出 -->
-    <el-col :span="1.5" class="excel">
+    <!-- 第三个容器：导出和分类筛选 -->
+    <div class="export-category">
       <el-button
         type="warning"
         plain
@@ -102,16 +114,37 @@
         size="mini"
         @click="handleExport"
         v-hasPermi="['merchant:good:export']"
-        >导出</el-button
-      >
-    </el-col>
-    <!-- 隐藏搜索,刷新 -->
-    <right-toolbar
-      class="toolbar"
-      :showSearch.sync="showSearch"
-      @queryTable="getList"
-    ></right-toolbar>
- 
+      >导出</el-button>
+
+      <!-- 分类按钮 -->
+      <div class="category-buttons">
+        <el-button
+          type="primary"
+          plain
+          @click="filterByCategory('shoes')"
+          size="mini"
+        >
+          鞋子
+        </el-button>
+        <el-button
+          type="primary"
+          plain
+          @click="filterByCategory('clothing')"
+          size="mini"
+        >
+          服饰
+        </el-button>
+        <el-button
+          type="primary"
+          plain
+          @click="filterByCategory('other')"
+          size="mini"
+        >
+          其他
+        </el-button>
+      </div>
+    </div>
+
     <!-- 表格显示 -->
     <el-table
       v-loading="loading"
@@ -135,7 +168,6 @@
           />
         </template>
       </el-table-column>
-
       <el-table-column label="尺寸" align="center" prop="dimensions">
         <template slot-scope="scope">
           <dict-tag
@@ -144,12 +176,10 @@
           />
         </template>
       </el-table-column>
-
       <el-table-column label="成本" align="center" prop="cost" />
       <el-table-column label="售价" align="center" prop="salePrice" />
       <el-table-column label="利润" align="center" prop="profit">
         <template slot-scope="scope">
-          <!-- If profit is 0, display "未售", else display the actual profit -->
           <span>{{ scope.row.profit === 0 ? '未售' : scope.row.profit }}</span>
         </template>
       </el-table-column>
@@ -162,7 +192,6 @@
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.createTime, "{y}-{m}-{d}") }}</span>
         </template>
-    <!-- 修改删除 -->
         <template slot-scope="scope">
           <el-button
             size="mini"
@@ -170,16 +199,14 @@
             icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['merchant:good:edit']"
-            >修改</el-button
-          >
+          >修改</el-button>
           <el-button
             size="mini"
             type="text"
             icon="el-icon-delete"
             @click="handleDelete(scope.row)"
             v-hasPermi="['merchant:good:remove']"
-            >删除</el-button
-          >
+          >删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -192,53 +219,9 @@
       :limit.sync="queryParams.pageSize"
       @pagination="getList"
     />
-
-    <!-- 添加或修改仓库对话框 -->
-    <el-dialog :title="title" :visible.sync="open" width="500px" append-to-body>
-      <el-form ref="form" :model="form" :rules="rules" label-width="80px">
-        <el-form-item label="商品" prop="productName">
-          <el-input v-model="form.productName" placeholder="请输入商品" />
-        </el-form-item>
-        <el-form-item label="货号" prop="productCode">
-          <el-input v-model="form.productCode" placeholder="请输入货号" />
-        </el-form-item>
-        <el-form-item label="码数" prop="sizeCode">
-          <el-select v-model="form.sizeCode" placeholder="请选择码数">
-            <el-option
-              v-for="dict in dict.type.tb_good_size_code"
-              :key="dict.value"
-              :label="dict.label"
-              :value="dict.value"
-            ></el-option>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="尺寸" prop="dimensions">
-          <el-select v-model="form.dimensions" placeholder="请选择尺寸">
-            <el-option
-              v-for="dict in dict.type.tb_good_size"
-              :key="dict.value"
-              :label="dict.label"
-              :value="dict.value"
-            ></el-option>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="成本" prop="cost">
-          <el-input v-model="form.cost" placeholder="请输入成本" />
-        </el-form-item >
-        <el-form-item label="售价" prop="salePrice">
-          <el-input v-model="form.salePrice" placeholder="请输入售价" />
-        </el-form-item>
-        <el-form-item label="利润" prop="profit">
-          <el-input v-model="form.profit" placeholder="请输入利润" />
-        </el-form-item>
-      </el-form>
-      <div slot="footer" class="dialog-footer">
-        <el-button type="primary" @click="submitForm">确 定</el-button>
-        <el-button @click="cancel">取 消</el-button>
-      </div>
-    </el-dialog>
   </div>
 </template>
+
 
 <script>
 import {
@@ -272,6 +255,7 @@ export default {
         endDate: null,
       },
       totalProfit: 0, //总利润
+      filterCategory: null, //新增筛选类型状态
       form: {},
       rules: {
         productName: [
@@ -289,7 +273,22 @@ export default {
     // 过滤符合时间范围的商品
     filteredGoods() {
       let goods = this.goodList;
-
+      if (this.filterCategory === 'shoes') {
+        //筛选出有码数或尺寸的商品
+        goods = goods.filter(
+          (good) => good.sizeCode || good.dimensions
+        );
+      } else if (this.filterCategory === 'clothing') {
+        //筛选出没有码数和尺寸的商品
+        goods = goods.filter(
+          (good) => !good.sizeCode && good.dimensions
+        );
+      } else if(this.filterCategory === 'other') {
+        //筛选出没有码数和尺寸的商品
+        goods = goods.filter(
+          (good) => !good.sizeCode && !good.dimensions
+         );
+      }
       if (this.queryParams.startDate && this.queryParams.endDate) {
         const startDate = this.queryParams.startDate;
         const endDate = this.queryParams.endDate;
@@ -307,6 +306,11 @@ export default {
     this.getList();
   },
   methods: {
+    //按照分类过滤商品
+    filterByCategory(category) {
+      this.filterCategory = category; //设置当前筛选类别
+      this.getList(); //刷新商品列表
+    },
     getList() {
       this.loading = true;
       // 在获取列表之前检查是否有时间范围的选择
@@ -495,84 +499,93 @@ export default {
 
 </script>
 <style scoped>
-/* 容器样式 */
 .app-container {
-  padding: 16.5px;
-  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0px;
+  padding: 0px;
+  background-color: #f5f7fa;
 }
 
-/* 查询表单样式 */
-.el-form {
-  margin-bottom: 123px;
+.search-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0px;
+  padding: 0px;
+  border: none;
+  border-radius: 4px;
+  background-color: #fff;
+}
+
+.search-form {
   display: flex;
   flex-wrap: wrap;
+  gap: 20px;
+  justify-content: flex-start;
 }
 
-/* 每个表单项的样式 */
+.search-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: center; /* Align the items vertically */
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center; /* Align buttons in the same row */
+  margin-top: 0; /* Remove top margin to keep buttons aligned with inputs */
+}
+
 .el-form-item {
-  margin-right: 15px;
-  margin-bottom: 10px;
+  margin-bottom: 0; /* Remove bottom margin to keep items aligned */
 }
 
-/* 搜索框和时间选择器宽度 */
-.el-input,
-.el-date-picker {
-  width: 165px;
-}
-
-/* 导出按钮样式 */
-.el-col {
-  margin-bottom: 17px;
-}
-
-/* 利润显示区 */
-.profit-row {
-  margin-top: -88.5px;
+/* 第二个容器：时间范围，计算总利润 */
+.profit-container {
   display: flex;
-  justify-content: flex-end; /* 右对齐 */
   align-items: center;
-  position: relative;
-  left: 235px;
+  justify-content: flex-start;
+  gap: 0px;
+  padding: 0px;
+  border: none;
+  border-radius: 4px;
+  background-color: #fff
 }
-
-.profit-col {
-  margin-right: 10px; /* 保持间距 */
-}
-
-.profitotal-col {
-  font-size: 16px;
-  font-weight: bold;
-}
-
-/* 表格样式 */
-.el-table {
-  margin-top: 20px;
-}
-
-/* 分页组件样式 */
-.pagination {
-  margin-top: 20px;
+.profit-form {
   display: flex;
-  justify-content: flex-end;
+  padding: 15px;
+  align-items: center;  /* 使时间范围选择框和按钮水平排列 */
 }
-/*利润时间范围*/
 .profit-range {
-  margin-right: 15px;
-  margin-bottom: -55px;
-  position: relative;
-  left: 0px;
+  margin-right: -58px;
 }
-/*工具栏*/
-.toolbar {
-  position: absolute;
-  top: 90px; /* 与顶部的间距 */
-  left: 25px; /* 与左侧的间距 */
+.profit-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
-/*导出*/
-.excel {
-  position: relative;
-  top: -4px; /* 与顶部的间距 */
-  left: 80px; /* 与左侧的间距 */
-  flex-wrap: wrap;
+
+.total-profit {
+  font-weight: bold;
+  color: #040404;
+}
+
+/* 第三个容器：导出和分类筛选 */
+.export-category {
+  display: flex;
+  justify-content: flex-start; /* 将元素放在左侧 */
+  align-items: center; /* 垂直居中 */
+  gap: 15px; /* 按钮之间的间距 */
+  padding: 5px;
+  border: none;
+  border-radius: 5px;
+  background-color: #fff;
+}
+
+.category-buttons {
+  display: flex;
+  gap: 10px;
 }
 </style>
