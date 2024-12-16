@@ -282,7 +282,6 @@ import {
   addGood,
   updateGood,
 } from "@/api/merchant/good";
-
 export default {
   name: "Good",
   dicts: ["tb_good_size_code", "tb_good_status", "tb_good_size"],

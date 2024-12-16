@@ -69,7 +69,7 @@
       <el-form :model="queryParams"  class="profit-form">
         <!-- 查询一段范围的利润 -->
         <el-form-item label="利润" label-width="53px" class="profit-range">
-          <el-row gutter="4">
+          <el-row gutter="Number(4)">
             <el-col :span="10">
               <el-date-picker
                 clearable
@@ -105,7 +105,11 @@
       </div>
     </div>
 
-    <!-- 第三个容器：导出和分类筛选 -->
+
+    <div>
+      <!-- ECharts 容器 -->
+      <div id="demo" style="width: 100%; height: 400px;"></div>
+          <!-- 第三个容器：导出和分类筛选 -->
     <div class="export-category">
       <el-button
         type="warning"
@@ -144,6 +148,7 @@
         </el-button>
       </div>
     </div>
+  </div>
 
     <!-- 表格显示 -->
     <el-table
@@ -231,7 +236,8 @@ import {
   addGood,
   updateGood,
 } from "@/api/merchant/good";
-
+import * as echarts from "echarts";
+import { nextTick } from 'vue';
 export default {
   name: "Good",
   dicts: ["tb_good_size_code", "tb_good_status", "tb_good_size"],
@@ -256,6 +262,8 @@ export default {
       },
       totalProfit: 0, //总利润
       filterCategory: null, //新增筛选类型状态
+      rawData: [], // 原始商品数据
+      chartData: [], // 按月统计的利润数据
       form: {},
       rules: {
         productName: [
@@ -305,31 +313,44 @@ export default {
   created() {
     this.getList();
   },
+  mounted() {
+    this.fetchData();
+  },
   methods: {
     //按照分类过滤商品
     filterByCategory(category) {
       this.filterCategory = category; //设置当前筛选类别
       this.getList(); //刷新商品列表
     },
-    getList() {
+    async getList() {
+      console.log("分页参数：", this.queryParams);  // 打印查询参数
       this.loading = true;
+      try {
+        const response = await listGood(this.queryParams);  // 请求数据
+        this.goodList = response.rows;  // 当前页数据
+        this.total = response.total;   // 总数据量
+      } catch (error) {
+        console.error('获取数据失败:', error);
+      } finally {
+        this.loading = false;
+      }
       // 在获取列表之前检查是否有时间范围的选择
       let filteredParams = { ...this.queryParams };
 
-      if (this.queryParams.startDate && this.queryParams.endDate) {
-        // 将日期范围加入过滤参数
-        filteredParams.startDate = this.queryParams.startDate;
-        filteredParams.endDate = this.queryParams.endDate;
-      }
+      // if (this.queryParams.startDate && this.queryParams.endDate) {
+      //   // 将日期范围加入过滤参数
+      //   filteredParams.startDate = this.queryParams.startDate;
+      //   filteredParams.endDate = this.queryParams.endDate;
+      // }
 
-      listGood(filteredParams).then((response) => {
-        this.goodList = response.rows.map((item) => ({
-          ...item,
-          isSold: item.isSold || false, // 添加 isSold 字段的默认值
-        }));
-        this.total = response.total;
-        this.loading = false;
-      });
+      // listGood(filteredParams).then((response) => {
+      //   this.goodList = response.rows.map((item) => ({
+      //     ...item,
+      //     isSold: item.isSold || false, // 添加 isSold 字段的默认值
+      //   }));
+      //   this.total = response.total;
+      //   this.loading = false;
+      // });
     },
     // 取消按钮
     cancel() {
@@ -480,22 +501,130 @@ export default {
     }
 
     // 计算符合条件商品的总利润
-    this.totalProfit = filteredGoods.reduce((total, good) => {
+    this.totalProfit= filteredGoods.reduce((total, good) => {
       return total + (good.profit || 0);
-    }, 0);
+    }, 0).toFixed(2);
 
   } catch (error) {
     console.error("计算利润时发生错误：", error);
   }
 },
     // 初始化页面时，计算总利润
-  async mounted() {
+    async mounted() {
     await this.calculateTotalProfit();
+    this.getList();
   },
- 
 
-  },
+// 调用接口获取商品数据
+async fetchData() {
+  try {
+    const response = await listGood({ pageNum: 1, pageSize: 99999 });
+    console.log("接口返回数据：", response);
+    if (response && response.code === 200 && Array.isArray(response.rows)) {
+      this.rawData = response.rows; // 确保数据是数组格式
+      console.log("已保存 rawData：", this.rawData); // 确认 rawData
+      this.processData(); // 处理数据
+      this.drawChart(); // 调用改写后的 drawChart 方法
+    } else {
+      console.error("接口返回的数据格式错误，rows 不为数组或 code 不为 200");
+    }
+  } catch (error) {
+    console.error("获取商品数据失败：", error);
+  }
+},
+
+// 处理数据：按月统计利润
+processData() {
+  this.monthlyData = {}; // 存储按月统计的数据
+
+  if (!this.rawData || !Array.isArray(this.rawData) || this.rawData.length === 0) {
+    console.error("rawData 数据无效或格式错误", this.rawData);
+    return;
+  }
+
+  this.rawData.forEach(item => {
+    if (item.dateTime && typeof item.dateTime === 'string') {
+      const month = item.dateTime.substring(0, 7); // 获取年月，如 "2024-10"
+      if (!this.monthlyData[month]) {
+        this.monthlyData[month] = 0;
+      }
+
+      if (typeof item.profit === 'number') {
+        this.monthlyData[month] += item.profit;
+      } else {
+        console.warn(`无效的 profit 数据：`, item.profit);
+      }
+    } else {
+      console.warn(`无效的 dateTime 数据：`, item.dateTime);
+    }
+  });
+
+  console.log("按月统计的利润：", this.monthlyData);
+},
+
+// 初始化 ECharts 图表
+drawChart() {
+  if (!this.monthlyData || typeof this.monthlyData !== 'object' || Object.keys(this.monthlyData).length === 0) {
+    console.error("monthlyData 无效或为空", this.monthlyData);
+    return;
+  }
+
+  // 获取月份数据
+  const months = Object.keys(this.monthlyData);
+
+  if (months.length === 0) {
+    console.warn("没有按月统计的数据！");
+    return;
+  }
+
+  // 图表数据
+  const chartData = months.map(month => this.monthlyData[month].toFixed(2));
+
+  // 获取 DOM 元素
+  let chartDom = document.getElementById('demo');
+  if (!chartDom) {
+    console.error("图表容器未找到");
+    return;
+  }
+
+  // 初始化图表实例
+  let myChart = echarts.init(chartDom);
+
+  // 配置项
+  let option = {
+    title: {
+      text: '每月利润统计',
+    },
+    xAxis: {
+      type: 'category',
+      data: months, // 使用处理后的月份数据
+    },
+    yAxis: {
+      type: 'value',
+    },
+    series: [
+      {
+        data: chartData,
+        type: 'line',
+        smooth: true,
+        label: {
+          show: true, // 开启数据标签
+          position: 'top', // 数据标签显示位置
+          formatter: '{c}', // 使用默认格式，显示数字
+          color: '#000', // 字体颜色
+          fontSize: 12, // 字体大小
+      },
+    },
+    ],
+  };
+
+  // 设置图表配置项
+  myChart.setOption(option);
+}
+
+},
 };
+
 
 </script>
 <style scoped>
@@ -579,7 +708,7 @@ export default {
   align-items: center; /* 垂直居中 */
   gap: 15px; /* 按钮之间的间距 */
   padding: 5px;
-  border: none;
+  border: none; 
   border-radius: 5px;
   background-color: #fff;
 }
@@ -587,5 +716,9 @@ export default {
 .category-buttons {
   display: flex;
   gap: 10px;
+}
+.canvas {
+  max-width: 600px;
+  margin: 20px auto;
 }
 </style>

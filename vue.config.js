@@ -70,6 +70,7 @@ module.exports = {
         minRatio: 0.8, // 压缩比例，小于 80% 的文件不会被压缩
         deleteOriginalAssets: false, // 压缩后删除原文件
       }),
+      
     ],
   },
   chainWebpack(config) {
