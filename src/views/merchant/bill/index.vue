@@ -62,8 +62,6 @@
         </div>
       </el-form>
     </div>
-  
-
     <!-- 第二个容器：时间范围，计算总利润，显示总利润 -->
     <div class="profit-container">
       <el-form :model="queryParams"  class="profit-form">
@@ -105,11 +103,10 @@
       </div>
     </div>
 
-
     <div>
       <!-- ECharts 容器 -->
       <div id="demo" style="width: 100%; height: 400px;"></div>
-          <!-- 第三个容器：导出和分类筛选 -->
+    <!-- 第三个容器：导出和分类筛选 -->
     <div class="export-category">
       <el-button
         type="warning"
@@ -189,7 +186,17 @@
         </template>
       </el-table-column>
       <el-table-column
-        label="操作时间"
+        label="创建时间"
+        align="center"
+        prop="createTime"
+        width="180"
+      >
+        <template slot-scope="scope">
+          <span>{{ parseTime(scope.row.createTime, "{y}-{m}-{d}") }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column
+        label="操作"
         align="center"
         prop="dateTime"
         width="180"
@@ -224,6 +231,44 @@
       :limit.sync="queryParams.pageSize"
       @pagination="getList"
     />
+    <!-- 添加或修改仓库对话框 -->
+    <el-dialog :title="title" :visible.sync="open" width="500px" append-to-body>
+      <el-form ref="form" :model="form" :rules="rules" label-width="80px">
+        <el-form-item label="商品" prop="productName" class="botton">
+          <el-input v-model="form.productName" placeholder="请输入商品" />
+        </el-form-item>
+        <el-form-item label="货号" prop="productCode" class="botton">
+          <el-input v-model="form.productCode" placeholder="请输入货号" />
+        </el-form-item>
+        <el-form-item label="码数" prop="sizeCode" class="botton">
+          <el-select v-model="form.sizeCode" placeholder="请选择码数">
+            <el-option
+              v-for="dict in dict.type.tb_good_size_code"
+              :key="dict.value"
+              :label="dict.label"
+              :value="dict.value"
+            ></el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="尺寸" prop="dimensions" class="botton">
+          <el-select v-model="form.dimensions" placeholder="请选择尺寸">
+            <el-option
+              v-for="dict in dict.type.tb_good_size"
+              :key="dict.value"
+              :label="dict.label"
+              :value="dict.value"
+            ></el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="成本" prop="cost" class="botton">
+          <el-input v-model="form.cost" placeholder="请输入成本" />
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer" >
+        <el-button type="primary" @click="submitForm">确 定</el-button>
+        <el-button @click="cancel">取 消</el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -237,7 +282,6 @@ import {
   updateGood,
 } from "@/api/merchant/good";
 import * as echarts from "echarts";
-import { nextTick } from 'vue';
 export default {
   name: "Good",
   dicts: ["tb_good_size_code", "tb_good_status", "tb_good_size"],
@@ -721,4 +765,9 @@ drawChart() {
   max-width: 600px;
   margin: 20px auto;
 }
+.botton {
+  margin-bottom: 20px; /* 增加间距 */
+}
+
+
 </style>
