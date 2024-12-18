@@ -104,8 +104,6 @@
     </div>
 
     <div>
-      <!-- ECharts 容器 -->
-      <div id="demo" style="width: 100%; height: 400px;"></div>
     <!-- 第三个容器：导出和分类筛选 -->
     <div class="export-category">
       <el-button
