@@ -1,5 +1,8 @@
 <template>
-  <div class="app-container">
+  <div class="good-container">
+    <div class="good-header">
+      <h1>商品管理</h1>
+    </div>
     <el-form
       :model="queryParams"
       ref="queryForm"
@@ -9,28 +12,28 @@
       label-width="68px"
     >
       <!-- 查询商品 -->
-      <el-form-item label="商品" prop="productName" >
-          <el-input
-            id="productName"
-            v-model="queryParams.productName"
-            :fetch-suggestions="fetchSuggestions"
-            placeholder="请输入商品"
-            clearable
-            @keyup.enter.native="handleQuery"
-            autocomplete="on"
-            name="productName"
-            popper-classes="custom-autocomplete-dropdown"
-          />
-      </el-form-item>   
+      <el-form-item label="商品" prop="productName">
+        <el-input
+          id="productName"
+          v-model="queryParams.productName"
+          :fetch-suggestions="fetchSuggestions"
+          placeholder="请输入商品"
+          clearable
+          @keyup.enter.native="handleQuery"
+          autocomplete="on"
+          name="productName"
+          popper-classes="custom-autocomplete-dropdown"
+        />
+      </el-form-item>
       <!-- 查询货号 -->
       <el-form-item label="货号" prop="productCode">
-          <el-input
-            id="productCode"
-            v-model="queryParams.productCode"
-            placeholder="请输入货号"
-            clearable
-            @keyup.enter.native="handleQuery"
-          />
+        <el-input
+          id="productCode"
+          v-model="queryParams.productCode"
+          placeholder="请输入货号"
+          clearable
+          @keyup.enter.native="handleQuery"
+        />
       </el-form-item>
       <!-- 查询创建时间 -->
       <el-form-item label="创建时间" prop="createTime">
@@ -59,14 +62,14 @@
         >
       </el-form-item>
       <!-- 总货值显示 -->
-       <el-row class="good-cost">
+      <el-row class="good-cost">
         <el-col :span="6">
-          <span>总货值: {{totalCost.toFixed(2)}}</span>
+          <span>总货值: {{ totalCost.toFixed(2) }}</span>
         </el-col>
-       </el-row>
-      </el-form>
-      <!-- 新增 导出 -->
-      <el-row :gutter="10" class="mb8">
+      </el-row>
+    </el-form>
+    <!-- 新增 导出 -->
+    <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
         <el-button
           type="primary"
@@ -92,37 +95,37 @@
       </el-col>
 
       <el-col :span="1.5">
-          <el-button
-            type="primary"
-            plain
-            @click="filterByCategory('shoes')"
-            size="mini"
-          >
-            鞋子
-          </el-button>
+        <el-button
+          type="primary"
+          plain
+          @click="filterByCategory('shoes')"
+          size="mini"
+        >
+          鞋子
+        </el-button>
       </el-col>
       <el-col :span="1.5">
-          <el-button
-            type="primary"
-            plain
-            @click="filterByCategory('clothing')"
-            size="mini"
-          >
-            服饰
-          </el-button>
+        <el-button
+          type="primary"
+          plain
+          @click="filterByCategory('clothing')"
+          size="mini"
+        >
+          服饰
+        </el-button>
       </el-col>
       <el-col :span="1.5">
-          <el-button
-            type="primary"
-            plain
-            @click="filterByCategory('other')"
-            size="mini"
-          >
-            其他
-          </el-button>
+        <el-button
+          type="primary"
+          plain
+          @click="filterByCategory('other')"
+          size="mini"
+        >
+          其他
+        </el-button>
       </el-col>
 
-          <right-toolbar
+      <right-toolbar
         :showSearch.sync="showSearch"
         @queryTable="getList"
       ></right-toolbar>
@@ -216,7 +219,7 @@
       </el-table-column>
     </el-table>
 
-    <!-- 自定义分页组件 -->
+    <!-- 自定义分页���件 -->
     <!-- <pagination 
       v-show="total > 0"
       :total="total"
@@ -300,7 +303,7 @@ export default {
         displayId: null,
         pageNum: 1,
         pageSize: 100,
-        productName: '',
+        productName: "",
         productCode: null,
         createTime: null,
         selectedDate: null,
@@ -327,22 +330,18 @@ export default {
     filteredGoods() {
       // 过滤商品列表
       let filtered = this.goodList;
-      filtered = this.goodList.filter((good)=>good.status !== "sold");
-      if (this.filterCategory === 'shoes') {
-        //筛选出有码数或尺寸的商品
-        filtered = filtered.filter(
-          (good) => good.sizeCode || good.dimensions
-        );
-      } else if (this.filterCategory === 'clothing') {
+      filtered = this.goodList.filter((good) => good.status !== "sold");
+      if (this.filterCategory === "shoes") {
+        //筛选有码数或尺寸的商品
+        filtered = filtered.filter((good) => good.sizeCode || good.dimensions);
+      } else if (this.filterCategory === "clothing") {
+        //筛选出没有码数和尺寸的商品
+        filtered = filtered.filter((good) => !good.sizeCode && good.dimensions);
+      } else if (this.filterCategory === "other") {
         //筛选出没有码数和尺寸的商品
         filtered = filtered.filter(
-          (good) => !good.sizeCode && good.dimensions
-        );
-      } else if(this.filterCategory === 'other') {
-        //筛选出没有码数和尺寸的商品
-         filtered = filtered.filter(
           (good) => !good.sizeCode && !good.dimensions
-         );
+        );
       }
 
       // 过滤已售出的商品
@@ -351,7 +350,7 @@ export default {
   },
   created() {
     this.getList();
-    const savedProductName = sessionStorage.getItem('productName');
+    const savedProductName = sessionStorage.getItem("productName");
     if (savedProductName) {
       this.queryParams.productName = savedProductName; // Set the saved value to the input field
     }
@@ -360,7 +359,7 @@ export default {
     //按照分类过滤商品
     filterByCategory(category) {
       this.filterCategory = category; //设置当前筛选类别
-      this.getList(); //刷新商品列表
+      this.getList(); //新商品列表
     },
     getList() {
       this.loading = true;
@@ -372,7 +371,9 @@ export default {
         this.total = response.total;
 
         //计算货值
-        this.totalCost =this.goodList.filter(good => good.status !=="sold").reduce((sum,good)=> sum + parseFloat(good.cost || 0),0);
+        this.totalCost = this.goodList
+          .filter((good) => good.status !== "sold")
+          .reduce((sum, good) => sum + parseFloat(good.cost || 0), 0);
         this.loading = false;
       });
     },
@@ -411,7 +412,7 @@ export default {
     },
     resetQuery() {
       if (this.queryParams.productName) {
-        sessionStorage.setItem('productName', this.queryParams.productName); // Save input to sessionStorage
+        sessionStorage.setItem("productName", this.queryParams.productName); // Save input to sessionStorage
       }
       this.resetForm("queryForm");
       this.handleQuery();
@@ -440,60 +441,56 @@ export default {
     },
     // 提交表单
     submitForm() {
-    this.$refs["form"].validate((valid) => {
-    if (valid) {
-      const quantity = this.form.quantity || 1; // 获取用户输入的数量
-      const rowsToAdd = [];
+      this.$refs["form"].validate((valid) => {
+        if (valid) {
+          const quantity = this.form.quantity || 1; // 获取用户输入的数量
+          const rowsToAdd = [];
 
-      // 根据数量生成对应数量的行数据
-      for (let i = 0; i < quantity; i++) {
-        const newRow = {
-          ...this.form, // 复制表单数据
-          productName: `${this.form.productName} (${i + 1})`, // 给商品名称添加不同编号
-          productCode: `${this.form.productCode}-${i + 1}`, // 给货号添加不同编号
-        };
+          // 根据数量生成对应数量的行数据
+          for (let i = 0; i < quantity; i++) {
+            const newRow = {
+              ...this.form, // 复制表单数据
+              productName: `${this.form.productName} (${i + 1})`, // 给商品名称添加不同编���
+              productCode: `${this.form.productCode}-${i + 1}`, // 给货号添加不同编号
+            };
 
-        // 如果是新增操作，确保 id 为 null
-        if (this.form.id == null) {
-          newRow.id = null; // 确保新增时 id 为 null
-        } else {
-          // 修改操作保持现有的 id
-          newRow.id = this.form.id;
+            // 如果是新增操作，确保 id 为 null
+            if (this.form.id == null) {
+              newRow.id = null; // 确保新增时 id 为 null
+            } else {
+              // 修改操作保持现有的 id
+              newRow.id = this.form.id;
+            }
+
+            rowsToAdd.push(newRow);
+          }
+
+          // 判断操作类型：根据表单 id 决定是新增还是修改
+          if (this.form.id == null) {
+            // 批量新增商品
+            Promise.all(rowsToAdd.map((row) => addGood(row)))
+              .then(() => {
+                this.$modal.msgSuccess("新增成功");
+                this.open = false; // 关闭弹窗
+                this.getList(); // 刷新列表
+              })
+              .catch((error) => {
+                this.$modal.msgError("新增失败");
+              });
+          } else {
+            // 批量修改商品
+            Promise.all(rowsToAdd.map((row) => updateGood(row)))
+              .then(() => {
+                this.$modal.msgSuccess("修改成功");
+                this.open = false; // 关闭弹窗
+                this.getList(); // 刷新列表
+              })
+              .catch((error) => {
+                this.$modal.msgError("修改失败");
+              });
+          }
         }
-
-        rowsToAdd.push(newRow);
-      }
-
-      // 判断操作类型：根据表单 id 决定是新增还是修改
-      if (this.form.id == null) {
-        // 批量新增商品
-        Promise.all(
-          rowsToAdd.map(row => addGood(row))
-        )
-          .then(() => {
-            this.$modal.msgSuccess("新增成功");
-            this.open = false; // 关闭弹窗
-            this.getList(); // 刷新列表
-          })
-          .catch((error) => {
-            this.$modal.msgError("新增失败");
-          });
-      } else {
-        // 批量修改商品
-        Promise.all(
-          rowsToAdd.map(row => updateGood(row))
-        )
-          .then(() => {
-            this.$modal.msgSuccess("修改成功");
-            this.open = false; // 关闭弹窗
-            this.getList(); // 刷新列表
-          })
-          .catch((error) => {
-            this.$modal.msgError("修改失败");
-          });
-      }
-    }
-  });
+      });
     },
     //删除
     handleDelete(row) {
@@ -536,7 +533,7 @@ export default {
         alert("商品已成功售出!");
         this.reset(); //
       } catch (error) {
-        console.error("售出商品时发生错误:", error);
+        console.error("售出���品时发生错误:", error);
         alert("售出商品时发生错误，请稍后重试!");
       }
     },
@@ -558,7 +555,7 @@ export default {
       this.reset(); // 重置表单内容
       this.open = true; // 打开对话框
       this.title = "增加货量"; // 设置对话框标题
-      
+
       this.isAdding = true; // 标记为增加操作
       this.form = { ...row, id: null };
     },
@@ -571,15 +568,174 @@ export default {
     getSuggestions(query) {
       // You can replace this with an actual API call or static data
       return [
-        { value: 'Product 1' },
-        { value: 'Product 2' },
-        { value: 'Product 3' },
-      ].filter((item) => item.value.toLowerCase().includes(query.toLowerCase()));
+        { value: "Product 1" },
+        { value: "Product 2" },
+        { value: "Product 3" },
+      ].filter((item) =>
+        item.value.toLowerCase().includes(query.toLowerCase())
+      );
     },
   },
 };
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
+.good-container {
+  min-height: 100vh;
+  padding: 2rem;
+  background: var(--bg-primary, #f5f7fa);
+  transition: all 0.3s ease;
 
+  @media (max-width: 768px) {
+    padding: 1rem;
+  }
+}
+
+.good-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  background: #fff;
+  padding: 1.25rem 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+
+  h1 {
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: #374151;
+    margin: 0;
+  }
+}
+
+.el-button {
+  transition: transform 0.2s ease;
+  border-radius: 8px;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  i {
+    margin-right: 8px;
+  }
+}
+
+// 响应式设计
+@media (max-width: 768px) {
+  .good-container {
+    padding: 1rem;
+  }
+
+  .good-header h1 {
+    font-size: 1.5rem;
+  }
+}
+
+// 表格样式优化
+:deep(.el-table) {
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+
+  th {
+    background: #f8f9fa !important;
+    font-weight: 600;
+    padding: 1rem;
+  }
+
+  td {
+    padding: 1rem;
+  }
+
+  .el-table__row {
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: rgba(0, 122, 255, 0.05) !important;
+    }
+  }
+}
+
+// 搜索表单样式
+.el-form {
+  background: linear-gradient(to right, #ffffff, #f8fafc);
+  padding: 1.25rem 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  margin-bottom: 1rem;
+  border: 1px solid #f1f5f9;
+
+  .el-form-item {
+    margin-bottom: 0.75rem;
+
+    :deep(.el-input__inner) {
+      border-radius: 8px;
+      border-color: #e5e7eb;
+      transition: all 0.2s ease;
+
+      &:hover {
+        border-color: #d1d5db;
+      }
+
+      &:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      }
+    }
+  }
+
+  // 日期选择器样式优化
+  :deep(.el-date-editor) {
+    .el-input__inner {
+      background: #fff;
+    }
+  }
+
+  // 按钮样式优化
+  .el-button {
+    padding: 0.5rem 1rem;
+    
+    &.el-button--primary {
+      background: #3b82f6;
+      border-color: #3b82f6;
+      
+      &:hover {
+        background: #2563eb;
+        border-color: #2563eb;
+      }
+    }
+  }
+}
+
+// 操作按钮样式
+.mb8 {
+  margin-bottom: 1rem;
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+
+  .el-button {
+    margin: 0;
+  }
+}
+
+// 总货值显示样式
+.good-cost {
+  background: linear-gradient(135deg, #f1f5f9, #f8fafc);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin-top: 0.75rem;
+  border: 1px solid #e2e8f0;
+
+  span {
+    font-weight: 500;
+    color: #374151;
+    display: flex;
+    align-items: center;
+    font-size: 0.95rem;
+  }
+}
 </style>

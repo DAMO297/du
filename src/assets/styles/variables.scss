@@ -21,25 +21,41 @@ $base-logo-light-title-color: #001529;
 $base-sub-menu-background:#1f2d3d;
 $base-sub-menu-hover:#001528;
 
-// 自定义暗色菜单风格
-/**
-$base-menu-color:hsla(0,0%,100%,.65);
-$base-menu-color-active:#fff;
-$base-menu-background:#001529;
-$base-logo-title-color: #ffffff;
-
-$base-menu-light-color:rgba(0,0,0,.70);
-$base-menu-light-background:#ffffff;
-$base-logo-light-title-color: #001529;
-
-$base-sub-menu-background:#000c17;
-$base-sub-menu-hover:#001528;
-*/
-
 $base-sidebar-width: 200px;
 
+// 新增现代化颜色变量
+$primary-color: #007AFF;
+$secondary-color: #5856D6;
+$success-color: #34C759;
+$warning-color: #FF9500;
+$danger-color: #FF3B30;
+$background-color: #F2F2F7;
+$text-primary: #000000;
+$text-secondary: #8E8E93;
+
+// 响应式断点
+$breakpoints: (
+  'sm': 576px,
+  'md': 768px,
+  'lg': 992px,
+  'xl': 1200px
+);
+
+// 混入
+@mixin responsive($breakpoint) {
+  @media screen and (min-width: map-get($breakpoints, $breakpoint)) {
+    @content;
+  }
+}
+
+// z-index管理
+$z-index: (
+  'navbar': 1000,
+  'sidebar': 900,
+  'modal': 2000
+);
+
 // the :export directive is the magic sauce for webpack
-// https://www.bluematador.com/blog/how-to-share-variables-between-js-and-sass
 :export {
   menuColor: $base-menu-color;
   menuLightColor: $base-menu-light-color;
