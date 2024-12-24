@@ -63,6 +63,10 @@ public class Good extends BaseEntity
     @Excel(name = "商品总值")
     private BigDecimal totalValue;
 
+    /** 库存数量 */
+    @Excel(name = "库存数量")
+    private Integer stock;
+
     /** 修改时间 */
     @JsonFormat(pattern = "yyyy-MM-dd")
     @Excel(name = "修改时间", width = 30, dateFormat = "yyyy-MM-dd")
@@ -71,6 +75,14 @@ public class Good extends BaseEntity
     /** 商品利润(售出价 - 成本) */
     @Excel(name = "商品利润(售出价 - 成本)")
     private BigDecimal profit;
+
+    /** 部门ID */
+    @Excel(name = "部门ID")
+    private Long deptId;
+
+    /** 用户ID */
+    @Excel(name = "用户ID")
+    private Long userId;
 
     public void setId(Long id) 
     {
@@ -153,6 +165,17 @@ public class Good extends BaseEntity
     {
         return totalValue;
     }
+    
+    public void setStock(Integer stock) 
+    {
+        this.stock = stock;
+    }
+
+    public Integer getStock() 
+    {
+        return stock;
+    }
+    
     public void setDateTime(Date dateTime) 
     {
         this.dateTime = dateTime;
@@ -172,6 +195,22 @@ public class Good extends BaseEntity
         return profit;
     }
 
+    public Long getDeptId() {
+        return deptId;
+    }
+
+    public void setDeptId(Long deptId) {
+        this.deptId = deptId;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -184,6 +223,7 @@ public class Good extends BaseEntity
             .append("status", getStatus())
             .append("salePrice", getSalePrice())
             .append("totalValue", getTotalValue())
+            .append("stock", getStock())
             .append("createTime", getCreateTime())
             .append("dateTime", getDateTime())
             .append("profit", getProfit())

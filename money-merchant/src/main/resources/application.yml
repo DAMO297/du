@@ -1,0 +1,9 @@
+express:
+  app-code: dbfb1ed4feb74d418111ba2690e500db
+
+logging:
+  level:
+    com.money.merchant: DEBUG
+    org.springframework.web.client.RestTemplate: DEBUG
+    org.springframework.boot.context.config: TRACE
+    com.money.merchant.config: DEBUG

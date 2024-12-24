@@ -199,8 +199,6 @@
         <module>money-generator</module>
         <module>money-common</module>
         <module>money-merchant</module>
-        <module>money-merchant</module>
-        <module>money-merchant</module>
     </modules>
     <packaging>pom</packaging>
 

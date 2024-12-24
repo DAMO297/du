@@ -77,6 +77,8 @@ public class CostController extends BaseController
     @PostMapping
     public AjaxResult add(@RequestBody Cost cost)
     {
+        cost.setDeptId(getDeptId());
+        cost.setUserId(getUserId());
         return toAjax(costService.insertCost(cost));
     }
 

@@ -17,6 +17,8 @@
         <result property="createTime"    column="create_time"    />
         <result property="dateTime"    column="date_time"    />
         <result property="profit"    column="profit"    />
+        <result property="deptId" column="dept_id"/>
+        <result property="userId" column="user_id"/>
     </resultMap>
 
     <sql id="selectGoodVo">
@@ -24,10 +26,15 @@
     </sql>
 
     <select id="selectGoodList" parameterType="Good" resultMap="GoodResult">
-        <include refid="selectGoodVo"/>
+        select g.* 
+        from tb_good g
+        left join sys_user u on u.user_id = g.user_id
+        left join sys_dept d on d.dept_id = g.dept_id
         <where>
-            <if test="productName != null and productName != ''"> and product_name like concat('%', #{productName}, '%')</if>
-            <if test="createTime != null "> and create_time = #{createTime}</if>
+            <if test="productName != null and productName != ''"> and g.product_name like concat('%', #{productName}, '%')</if>
+            <if test="productCode != null and productCode != ''"> and g.product_code like concat('%', #{productCode}, '%')</if>
+            <if test="createTime != null "> and g.create_time = #{createTime}</if>
+            ${params.dataScope}
         </where>
     </select>
 
@@ -52,6 +59,8 @@
             <if test="createTime != null">create_time,</if>
             <if test="dateTime != null">date_time,</if>
             <if test="profit != null">profit,</if>
+            <if test="userId != null">user_id,</if>
+            <if test="deptId != null">dept_id,</if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="productName != null and productName != ''">#{productName},</if>
@@ -65,6 +74,8 @@
             <if test="createTime != null">#{createTime},</if>
             <if test="dateTime != null">#{dateTime},</if>
             <if test="profit != null">#{profit},</if>
+            <if test="userId != null">#{userId},</if>
+            <if test="deptId != null">#{deptId},</if>
         </trim>
     </insert>
 
@@ -96,4 +107,13 @@
             #{id}
         </foreach>
     </delete>
+
+    <select id="selectShippingFee" resultMap="GoodResult">
+        <include refid="selectGoodVo"/>
+        <where>
+            <if test="sizeCode != null"> and size_code = #{sizeCode}</if>
+            <if test="dimensions != null"> and dimensions = #{dimensions}</if>
+            and status = '1'  <!-- 假设 1 表示有效状态 -->
+        </where>
+    </select>
 </mapper>

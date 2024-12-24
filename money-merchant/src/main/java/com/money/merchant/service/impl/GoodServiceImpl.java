@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import com.money.merchant.mapper.GoodMapper;
 import com.money.merchant.domain.Good;
 import com.money.merchant.service.IGoodService;
+import com.money.common.annotation.DataScope;
 
 /**
  * 仓库Service业务层处理
@@ -39,6 +40,7 @@ public class GoodServiceImpl implements IGoodService
      * @return 仓库
      */
     @Override
+    @DataScope(deptAlias = "d", userAlias = "u")
     public List<Good> selectGoodList(Good good)
     {
         return goodMapper.selectGoodList(good);

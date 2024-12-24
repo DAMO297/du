@@ -18,12 +18,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectCostList" parameterType="Cost" resultMap="CostResult">
-        <include refid="selectCostVo"/>
-        <where>  
-            <if test="logisticsCompany != null  and logisticsCompany != ''"> and logistics_company = #{logisticsCompany}</if>
-            <if test="lastFourDigits != null  and lastFourDigits != ''"> and last_four_digits = #{lastFourDigits}</if>
-            <if test="costAmount != null "> and cost_amount = #{costAmount}</if>
-            <if test="dateTime != null "> and date_time = #{dateTime}</if>
+        select c.* 
+        from tb_cost c
+        left join sys_user u on u.user_id = c.user_id
+        left join sys_dept d on d.dept_id = c.dept_id
+        <where>
+            <if test="logisticsCompany != null and logisticsCompany != ''"> and c.logistics_company = #{logisticsCompany}</if>
+            <if test="lastFourDigits != null and lastFourDigits != ''"> and c.last_four_digits = #{lastFourDigits}</if>
+            <if test="costAmount != null"> and c.cost_amount = #{costAmount}</if>
+            <if test="dateTime != null"> and c.date_time = #{dateTime}</if>
+            ${params.dataScope}
         </where>
     </select>
     
@@ -40,14 +44,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="costAmount != null">cost_amount,</if>
             <if test="createTime != null">create_time,</if>
             <if test="dateTime != null">date_time,</if>
-         </trim>
+            <if test="userId != null">user_id,</if>
+            <if test="deptId != null">dept_id,</if>
+        </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="logisticsCompany != null and logisticsCompany != ''">#{logisticsCompany},</if>
             <if test="lastFourDigits != null and lastFourDigits != ''">#{lastFourDigits},</if>
             <if test="costAmount != null">#{costAmount},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="dateTime != null">#{dateTime},</if>
-         </trim>
+            <if test="userId != null">#{userId},</if>
+            <if test="deptId != null">#{deptId},</if>
+        </trim>
     </insert>
 
     <update id="updateCost" parameterType="Cost">
