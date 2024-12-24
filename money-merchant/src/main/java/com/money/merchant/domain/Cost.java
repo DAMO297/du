@@ -38,6 +38,9 @@ public class Cost extends BaseEntity
     @Excel(name = "修改时间", width = 30, dateFormat = "yyyy-MM-dd")
     private Date dateTime;
 
+    private Long userId;
+    private Long deptId;
+
     public void setId(Long id) 
     {
         this.id = id;
@@ -82,6 +85,22 @@ public class Cost extends BaseEntity
     public Date getDateTime() 
     {
         return dateTime;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
+
+    public Long getDeptId() {
+        return deptId;
+    }
+
+    public void setDeptId(Long deptId) {
+        this.deptId = deptId;
     }
 
     @Override

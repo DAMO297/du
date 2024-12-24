@@ -60,4 +60,12 @@ public interface GoodMapper
      * @return 结果
      */
     public int deleteGoodByIds(Long[] ids);
+
+    /**
+     * 查询邮费信息
+     * 
+     * @param good 商品信息（包含尺寸代码和尺寸）
+     * @return 邮费信息
+     */
+    public Good selectShippingFee(Good good);
 }

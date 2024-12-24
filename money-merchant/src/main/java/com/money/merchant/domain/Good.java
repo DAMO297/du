@@ -48,7 +48,7 @@ public class Good extends BaseEntity
     private String dimensions;
 
     /** 商品成本 */
-    @Excel(name = "商品成本")
+    @Excel(name = "商品成��")
     private BigDecimal cost;
 
     /** 状态: 卖出或退掉 */
@@ -71,6 +71,14 @@ public class Good extends BaseEntity
     /** 商品利润(售出价 - 成本) */
     @Excel(name = "商品利润(售出价 - 成本)")
     private BigDecimal profit;
+
+    /** 部门ID */
+    @Excel(name = "部门ID")
+    private Long deptId;
+
+    /** 用户ID */
+    @Excel(name = "用户ID")
+    private Long userId;
 
     public void setId(Long id) 
     {
@@ -170,6 +178,22 @@ public class Good extends BaseEntity
     public BigDecimal getProfit() 
     {
         return profit;
+    }
+
+    public Long getDeptId() {
+        return deptId;
+    }
+
+    public void setDeptId(Long deptId) {
+        this.deptId = deptId;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 
     @Override

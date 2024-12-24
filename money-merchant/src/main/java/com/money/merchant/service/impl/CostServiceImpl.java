@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import com.money.merchant.mapper.CostMapper;
 import com.money.merchant.domain.Cost;
 import com.money.merchant.service.ICostService;
+import com.money.common.annotation.DataScope;
 
 /**
  * 邮费Service业务层处理
@@ -39,6 +40,7 @@ public class CostServiceImpl implements ICostService
      * @return 邮费
      */
     @Override
+    @DataScope(deptAlias = "d", userAlias = "u")
     public List<Cost> selectCostList(Cost cost)
     {
         return costMapper.selectCostList(cost);

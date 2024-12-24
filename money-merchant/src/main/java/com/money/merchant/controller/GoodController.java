@@ -77,6 +77,8 @@ public class GoodController extends BaseController
     @PostMapping
     public AjaxResult add(@RequestBody Good good)
     {
+        good.setDeptId(getDeptId());
+        good.setUserId(getUserId());
         return toAjax(goodService.insertGood(good));
     }
 

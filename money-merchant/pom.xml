@@ -15,5 +15,9 @@
             <groupId>com.money</groupId>
             <artifactId>money-framework</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.money</groupId>
+            <artifactId>money-common</artifactId>
+        </dependency>
     </dependencies>
 </project>
