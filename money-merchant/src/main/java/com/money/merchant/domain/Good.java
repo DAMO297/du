@@ -48,7 +48,7 @@ public class Good extends BaseEntity
     private String dimensions;
 
     /** 商品成本 */
-    @Excel(name = "商品成本")
+    @Excel(name = "商品成��")
     private BigDecimal cost;
 
     /** 状态: 卖出或退掉 */
