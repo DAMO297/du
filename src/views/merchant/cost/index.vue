@@ -8,6 +8,7 @@
       v-show="showSearch"
       label-width="68px"
     >
+<<<<<<< HEAD
       <el-form-item label="物流公司名称" prop="logisticsCompany">
         <el-select
           v-model="queryParams.logisticsCompany"
@@ -72,6 +73,80 @@
       </el-form-item>
     </el-form>
 
+=======
+      <div class="search-card">
+        <div class="search-content">
+          <div class="search-group">
+            <!-- 左侧：单号搜索和按钮 -->
+            <div class="left-section">
+              <div class="search-item">
+                <el-form-item label="单号后四" prop="lastFourDigits">
+                  <div class="input-with-button">
+                    <el-input
+                      v-model="queryParams.lastFourDigits"
+                      placeholder="请输入单号后四"
+                      prefix-icon="el-icon-search"
+                      clearable
+                      @keyup.enter.native="handleQuery"
+                    />
+                    <el-button 
+                      type="primary" 
+                      icon="el-icon-search"
+                      size="small"
+                      @click="handleQuery"
+                    >
+                      搜索
+                    </el-button>
+                  </div>
+                </el-form-item>
+              </div>
+            </div>
+
+            <!-- 右侧：日期选择和总利润 -->
+            <div class="right-section">
+              <div class="date-profit-row">
+                <div class="date-range">
+                  <el-form-item label="开始时间" prop="startDate">
+                    <el-date-picker
+                      v-model="queryParams.startDate"
+                      type="date"
+                      placeholder="选择开始日期"
+                      clearable
+                      @change="handleQuery"
+                    />
+                  </el-form-item>
+                  <span class="date-separator"></span>
+                  <el-form-item label="结束时间" prop="endDate">
+                    <el-date-picker
+                      v-model="queryParams.endDate"
+                      type="date"
+                      placeholder="选择结束日期"
+                      clearable
+                      @change="handleQuery"
+                    />
+                  </el-form-item>
+                  <div class="profit-section">
+                    <div class="profit-info">
+                      <span class="profit-amount">¥ {{ totalCost.toFixed(2) }}</span>
+                      <span class="profit-label">总开销</span>
+                    </div>
+                    <el-button 
+                      type="primary"
+                      icon="el-icon-refresh"
+                      circle
+                      class="refresh-btn"
+                      @click="calculateTotalCost"
+                    ></el-button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </el-form>
+    <!-- 新增修改删除导出 -->
+>>>>>>> ffcf9a742f1b49cc2a1ad7b229437a6da1ba255a
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
         <el-button
@@ -119,17 +194,34 @@
           >导出</el-button
         >
       </el-col>
+<<<<<<< HEAD
+=======
+      <el-col :span="1.5">
+        <el-button
+          type="info"
+          plain
+          icon="el-icon-refresh"
+          size="mini"
+          @click="resetQuery"
+        >重置</el-button>
+      </el-col>
+>>>>>>> ffcf9a742f1b49cc2a1ad7b229437a6da1ba255a
       <right-toolbar
         :showSearch.sync="showSearch"
         @queryTable="getList"
       ></right-toolbar>
     </el-row>
+<<<<<<< HEAD
 
+=======
+    <!-- 表格 -->
+>>>>>>> ffcf9a742f1b49cc2a1ad7b229437a6da1ba255a
     <el-table
       v-loading="loading"
       :data="costList"
       @selection-change="handleSelectionChange"
     >
+<<<<<<< HEAD
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="邮费主键ID" align="center" prop="id" />
       <el-table-column
@@ -137,6 +229,16 @@
         align="center"
         prop="logisticsCompany"
       >
+=======
+      <el-table-column label="序号" align="center">
+        <template slot-scope="scope">
+          {{
+            (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1
+          }}
+        </template>
+      </el-table-column>
+      <el-table-column label="物流公司" align="center" prop="logisticsCompany">
+>>>>>>> ffcf9a742f1b49cc2a1ad7b229437a6da1ba255a
         <template slot-scope="scope">
           <dict-tag
             :options="dict.type.tb_name"
@@ -144,6 +246,7 @@
           />
         </template>
       </el-table-column>
+<<<<<<< HEAD
       <el-table-column
         label="完整运单号"
         align="center"
@@ -157,6 +260,10 @@
         :show-overflow-tooltip="true"
       />
       <el-table-column label="花费金额" align="center" prop="costAmount" />
+=======
+      <el-table-column label="单号后四" align="center" prop="lastFourDigits" />
+      <el-table-column label="开销" align="center" prop="costAmount" />
+>>>>>>> ffcf9a742f1b49cc2a1ad7b229437a6da1ba255a
       <el-table-column
         label="创建时间"
         align="center"
@@ -168,6 +275,7 @@
         </template>
       </el-table-column>
       <el-table-column
+<<<<<<< HEAD
         label="修改时间"
         align="center"
         prop="dateTime"
@@ -213,6 +321,8 @@
         </template>
       </el-table-column>
       <el-table-column
+=======
+>>>>>>> ffcf9a742f1b49cc2a1ad7b229437a6da1ba255a
         label="操作"
         align="center"
         class-name="small-padding fixed-width"
@@ -237,7 +347,11 @@
         </template>
       </el-table-column>
     </el-table>
+<<<<<<< HEAD
 
+=======
+    <!-- 分页 -->
+>>>>>>> ffcf9a742f1b49cc2a1ad7b229437a6da1ba255a
     <pagination
       v-show="total > 0"
       :total="total"
@@ -249,6 +363,7 @@
     <!-- 添加或修改邮费对话框 -->
     <el-dialog :title="title" :visible.sync="open" width="500px" append-to-body>
       <el-form ref="form" :model="form" :rules="rules" label-width="80px">
+<<<<<<< HEAD
         <el-form-item label="运单图片" prop="imageUploadTime">
           <image-upload
             v-model="form.imageUploadTime"
@@ -315,6 +430,29 @@
             type="textarea"
             placeholder="请输入内容"
           />
+=======
+        <el-form-item label="物流公司" prop="logisticsCompany">
+          <el-select
+            v-model="form.logisticsCompany"
+            placeholder="请选择物流公司"
+          >
+            <el-option
+              v-for="dict in dict.type.tb_name"
+              :key="dict.value"
+              :label="dict.label"
+              :value="dict.value"
+            ></el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="单号后四" prop="lastFourDigits">
+          <el-input
+            v-model="form.lastFourDigits"
+            placeholder="请输入单号后四"
+          />
+        </el-form-item>
+        <el-form-item label="开销" prop="costAmount">
+          <el-input v-model="form.costAmount" placeholder="请输入开销" />
+>>>>>>> ffcf9a742f1b49cc2a1ad7b229437a6da1ba255a
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -332,7 +470,10 @@ import {
   delCost,
   addCost,
   updateCost,
+<<<<<<< HEAD
   queryLogisticsInfo,
+=======
+>>>>>>> ffcf9a742f1b49cc2a1ad7b229437a6da1ba255a
 } from "@/api/merchant/cost";
 
 export default {
@@ -362,6 +503,7 @@ export default {
       queryParams: {
         pageNum: 1,
         pageSize: 10,
+<<<<<<< HEAD
         logisticsCompany: null,
         fullTrackingNumber: null,
         costAmount: null,
@@ -417,6 +559,29 @@ export default {
       immediate: true,
     },
   },
+=======
+        lastFourDigits: null,
+        startDate: null,
+        endDate: null,
+      },
+      totalCost: 0,
+      // 表单参数
+      form: {},
+      // 表单校验
+      rules: {
+        logisticsCompany: [
+          { required: true, message: "物流公司不能为空", trigger: "blur" },
+        ],
+        lastFourDigits: [
+          { required: true, message: "单号后四不能为空", trigger: "blur" },
+        ],
+        costAmount: [
+          { required: true, message: "开销不能为空", trigger: "blur" },
+        ],
+      },
+    };
+  },
+>>>>>>> ffcf9a742f1b49cc2a1ad7b229437a6da1ba255a
   created() {
     this.getList();
   },
@@ -439,6 +604,7 @@ export default {
     reset() {
       this.form = {
         id: null,
+<<<<<<< HEAD
         userId: null,
         deptId: null,
         logisticsCompany: null,
@@ -457,6 +623,13 @@ export default {
         logisticsStatus: null,
         logisticsTraces: null,
         expName: null,
+=======
+        logisticsCompany: null,
+        lastFourDigits: null,
+        costAmount: null,
+        createTime: null,
+        dateTime: null,
+>>>>>>> ffcf9a742f1b49cc2a1ad7b229437a6da1ba255a
       };
       this.resetForm("form");
     },
@@ -536,6 +709,7 @@ export default {
         `cost_${new Date().getTime()}.xlsx`
       );
     },
+<<<<<<< HEAD
     /** 查询物流信息 */
     handleQueryLogistics() {
       if (!this.form.fullTrackingNumber) {
@@ -680,7 +854,251 @@ export default {
     handleImageUploaded(imageUrl) {
       if (!imageUrl) return;
       this.form.imageUploadTime = new Date(); // 修改为当前时间
+=======
+    //获取所有列表开销
+    async fetchAllCosts() {
+      try {
+        const response = await listCost({ pageNum: 1, pageSize: 10 });
+        return response.rows;
+      } catch (error) {
+        console.error("获取开销列表时发生错误: ", error);
+        return [];
+      }
+    },
+    // 计算总开销
+    async calculateTotalCost() {
+      try {
+        // 获取所有商品
+        const allCost = await this.fetchAllCosts();
+
+        // 如果有选择时间范围，进行过滤
+        let filteredCosts = allCost;
+
+        if (this.queryParams.startDate && this.queryParams.endDate) {
+          const startDate = this.queryParams.startDate;
+          const endDate = this.queryParams.endDate;
+
+          // 过滤商品，确保它们的 `createTime` 在选择的时间范围内
+          filteredCosts = filteredCosts.filter((cost) => {
+            const createTime = cost.createTime.split(" ")[0]; // 提取日期部分
+            return createTime >= startDate && createTime <= endDate;
+          });
+        }
+
+        // 计算符合条件商品的总利润
+        this.totalCost = filteredCosts.reduce((total, cost) => {
+          return total + (parseFloat(cost.costAmount) || 0);
+        }, 0);
+        this.$message.success("总开销计算成功");
+      } catch (error) {
+        console.error("计算开销时发生错误：", error);
+        this.$message.error("计算总开销失败,请重试! ");
+      }
+>>>>>>> ffcf9a742f1b49cc2a1ad7b229437a6da1ba255a
     },
   },
 };
 </script>
+<<<<<<< HEAD
+=======
+
+<style lang="scss" scoped>
+.app-container {
+  .search-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+
+    .search-content {
+      .search-group {
+        display: flex;
+        gap: 32px;
+        
+        @media (max-width: 768px) {
+          flex-direction: column;
+          gap: 24px;
+        }
+
+        // 左侧部分样式
+        .left-section {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+          padding-right: 24px; // 添加右侧内边距
+
+          .search-item {
+            .el-form-item {
+              margin-bottom: 0;
+              width: 100%;
+              min-width: 160px; // 添加最小宽度
+              max-width: 180px; // 添加最大宽度，与日期选择器保持一致
+
+              .input-with-button {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+
+                .el-input {
+                  flex: 1;
+                }
+
+                .el-button {
+                  position: absolute; // 将按钮绝对定位
+                  right: -90px;    // 调整按钮位置
+                  margin-left: 8px;
+                  padding: 8px 16px;
+                  border-radius: 4px;
+                  font-size: 13px;
+                }
+              }
+            }
+          }
+        }
+
+        // 右侧部分样式
+        .right-section {
+          flex: 2;
+          padding-left: 24px;
+          border-left: 1px solid #e5e7eb;
+          position: relative;
+
+          @media (max-width: 768px) {
+            padding-left: 0;
+            border-left: none;
+            padding-top: 16px;
+            border-top: 1px solid #e5e7eb;
+          }
+
+          .date-range {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            padding-right: 190px;
+            
+            @media (max-width: 768px) {
+              flex-wrap: wrap;
+            }
+
+            .el-form-item {
+              margin-bottom: 0;
+              flex: 1;
+              min-width: 160px;
+              max-width: 180px;
+            }
+
+            .date-separator {
+              padding: 0 31.5px; // 减小间距
+            }
+
+            .profit-section {
+              display: flex;
+              align-items: center;
+              background: linear-gradient(135deg, #3b82f6, #2563eb);
+              padding: 8px 12px;
+              border-radius: 8px;
+              color: white;
+              margin-left: 35px;
+              width: 170px;
+              height: 72px;
+              position: absolute;
+              right: 24px;
+              top: 50%;
+              transform: translateY(-50%);
+
+              .profit-info {
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                gap: 8px;
+
+                .profit-amount {
+                  font-size: 16px;
+                  font-weight: 600;
+                }
+
+                .profit-label {
+                  font-size: 15px;
+                }
+              }
+
+              .refresh-btn {
+                padding: 4px;
+                font-size: 12px;
+                margin-left: 8px;
+                height: 24px;
+                width: 24px;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // 暗色主题支持
+  @media (prefers-color-scheme: dark) {
+    .search-card {
+      background: #1f2937;
+
+      .search-group {
+        .right-section {
+          border-left-color: #374151;
+
+          @media (max-width: 768px) {
+            border-top-color: #374151;
+          }
+        }
+      }
+    }
+
+    ::v-deep .el-input__inner,
+    ::v-deep .el-date-editor .el-input__inner {
+      background: #374151;
+      border-color: #4b5563;
+      color: #e5e7eb;
+
+      &::placeholder {
+        color: #9ca3af;
+      }
+    }
+
+    .date-separator {
+      color: #9ca3af !important;
+    }
+  }
+
+  // 修改操作按钮组样式
+  .mb8 {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+
+    .el-button {
+      margin: 0; // 移除默认边距
+      padding: 8px 16px;
+      height: 32px;
+      line-height: 1;
+      
+      &.is-plain {
+        &:hover {
+          color: var(--el-color-primary);
+          border-color: var(--el-color-primary);
+          background-color: var(--el-color-primary-light-9);
+        }
+      }
+    }
+
+    .el-col {
+      padding: 0 5px;
+      margin-bottom: 8px;
+    }
+  }
+}
+</style>
+>>>>>>> ffcf9a742f1b49cc2a1ad7b229437a6da1ba255a
