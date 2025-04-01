@@ -1,0 +1,741 @@
+<template>
+  <div class="good-container">
+    <div class="good-header">
+      <h1>商品管理</h1>
+    </div>
+    <el-form
+      :model="queryParams"
+      ref="queryForm"
+      size="small"
+      :inline="true"
+      v-show="showSearch"
+      label-width="68px"
+    >
+      <!-- 查询商品 -->
+      <el-form-item label="商品" prop="productName">
+        <el-input
+          id="productName"
+          v-model="queryParams.productName"
+          :fetch-suggestions="fetchSuggestions"
+          placeholder="请输入商品"
+          clearable
+          @keyup.enter.native="handleQuery"
+          autocomplete="on"
+          name="productName"
+          popper-classes="custom-autocomplete-dropdown"
+        />
+      </el-form-item>
+      <!-- 查询货号 -->
+      <el-form-item label="货号" prop="productCode">
+        <el-input
+          id="productCode"
+          v-model="queryParams.productCode"
+          placeholder="请输入货号"
+          clearable
+          @keyup.enter.native="handleQuery"
+        />
+      </el-form-item>
+      <!-- 查询创建时间 -->
+      <el-form-item label="创建时间" prop="createTime">
+        <el-date-picker
+          clearable
+          id="createTime"
+          v-model="queryParams.createTime"
+          type="date"
+          value-format="yyyy-MM-dd"
+          placeholder="请选择创建时间"
+          @change="handleDateChange"
+        >
+        </el-date-picker>
+      </el-form-item>
+      <!-- 搜索重置 -->
+      <el-form-item>
+        <el-button
+          type="primary"
+          icon="el-icon-search"
+          size="mini"
+          @click="handleQuery"
+          >搜索</el-button
+        >
+        <el-button icon="el-icon-refresh" size="mini" @click="resetQuery"
+          >重置</el-button
+        >
+      </el-form-item>
+      <!-- 总货值显示 -->
+      <el-row class="good-cost">
+        <el-col :span="6">
+          <span>总货值: {{ totalCost.toFixed(2) }}</span>
+        </el-col>
+      </el-row>
+    </el-form>
+    <!-- 新增 导出 -->
+    <el-row :gutter="10" class="mb8">
+      <el-col :span="1.5">
+        <el-button
+          type="primary"
+          plain
+          icon="el-icon-plus"
+          size="mini"
+          @click="handleAdd"
+          v-hasPermi="['merchant:good:add']"
+          >新增
+        </el-button>
+      </el-col>
+
+      <el-col :span="1.5">
+        <el-button
+          type="warning"
+          plain
+          icon="el-icon-download"
+          size="mini"
+          @click="handleExport"
+          v-hasPermi="['merchant:good:export']"
+          >导出</el-button
+        >
+      </el-col>
+
+      <el-col :span="1.5">
+        <el-button
+          type="primary"
+          plain
+          @click="filterByCategory('shoes')"
+          size="mini"
+        >
+          鞋子
+        </el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="primary"
+          plain
+          @click="filterByCategory('clothing')"
+          size="mini"
+        >
+          服饰
+        </el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="primary"
+          plain
+          @click="filterByCategory('other')"
+          size="mini"
+        >
+          其他
+        </el-button>
+      </el-col>
+
+      <right-toolbar
+        :showSearch.sync="showSearch"
+        @queryTable="getList"
+      ></right-toolbar>
+    </el-row>
+    <!-- 表单 -->
+    <el-table
+      v-loading="loading"
+      :data="filteredGoods"
+      @selection-change="handleSelectionChange"
+    >
+      <el-table-column type="selection" width="55" align="center" />
+      <el-table-column label="序号" align="center">
+        <template slot-scope="scope">
+          {{
+            (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1
+          }}
+        </template>
+      </el-table-column>
+      <el-table-column label="商品" align="center" prop="productName" />
+      <el-table-column label="货号" align="center" prop="productCode" />
+      <el-table-column label="码数" align="center" prop="sizeCode">
+        <template slot-scope="scope">
+          <dict-tag
+            :options="dict.type.tb_good_size_code"
+            :value="scope.row.sizeCode"
+          />
+        </template>
+      </el-table-column>
+
+      <el-table-column label="尺寸" align="center" prop="dimensions">
+        <template slot-scope="scope">
+          <dict-tag
+            :options="dict.type.tb_good_size"
+            :value="scope.row.dimensions"
+          />
+        </template>
+      </el-table-column>
+
+      <el-table-column label="成本" align="center" prop="cost" />
+      <el-table-column
+        label="创建时间"
+        align="center"
+        prop="createTime"
+        width="180"
+      >
+        <template slot-scope="scope">
+          <span>{{ parseTime(scope.row.createTime, "{y}-{m}-{d}") }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column
+        label="操作"
+        align="center"
+        class-name="small-padding fixed-width"
+      >
+        <!-- 表格右边的几个 -->
+        <template slot-scope="scope">
+          <el-button
+            size="mini"
+            type="text"
+            icon="el-icon-edit"
+            @click="handleUpdate(scope.row)"
+            v-hasPermi="['merchant:good:edit']"
+            >修改</el-button
+          >
+          <el-button
+            size="mini"
+            type="text"
+            icon="el-icon-delete"
+            @click="handleDelete(scope.row)"
+            v-hasPermi="['merchant:good:remove']"
+            >删除</el-button
+          >
+          <el-button
+            data="filteredGoods"
+            size="mini"
+            type="text"
+            icon="el-icon-sell"
+            @click="handleSell(scope.row)"
+            v-hasPermi="['merchant:good:sell']"
+            >售出
+          </el-button>
+          <el-button
+            size="mini"
+            type="text"
+            icon="el-icon-plus"
+            @click="handleIncreaseQuantity(scope.row)"
+            v-hasPermi="['merchant:good:add']"
+            >增加货量</el-button
+          >
+        </template>
+      </el-table-column>
+    </el-table>
+
+    <!-- 自定义分页���件 -->
+    <!-- <pagination 
+      v-show="total > 0"
+      :total="total"
+      :page.sync="queryParams.pageNum"
+      :limit.sync="queryParams.pageSize"
+      @pagination="getList"
+    /> -->
+
+    <!-- 添加或修改仓库对话框 -->
+    <el-dialog :title="title" :visible.sync="open" width="500px" append-to-body>
+      <el-form ref="form" :model="form" :rules="rules" label-width="80px">
+        <el-form-item label="商品" prop="productName">
+          <el-input v-model="form.productName" placeholder="请输入商品" />
+        </el-form-item>
+        <el-form-item label="货号" prop="productCode">
+          <el-input v-model="form.productCode" placeholder="请输入货号" />
+        </el-form-item>
+        <el-form-item label="码数" prop="sizeCode">
+          <el-select v-model="form.sizeCode" placeholder="请选择码数">
+            <el-option
+              v-for="dict in dict.type.tb_good_size_code"
+              :key="dict.value"
+              :label="dict.label"
+              :value="dict.value"
+            ></el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="尺寸" prop="dimensions">
+          <el-select v-model="form.dimensions" placeholder="请选择尺寸">
+            <el-option
+              v-for="dict in dict.type.tb_good_size"
+              :key="dict.value"
+              :label="dict.label"
+              :value="dict.value"
+            ></el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="成本" prop="cost">
+          <el-input v-model="form.cost" placeholder="请输入成本" />
+        </el-form-item>
+        <el-form-item label="数量" prop="quantity">
+          <el-input
+            v-model="form.quantity"
+            type="number"
+            placeholder="请输入数量"
+          />
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button type="primary" @click="submitForm">确 定</el-button>
+        <el-button @click="cancel">取 消</el-button>
+      </div>
+    </el-dialog>
+  </div>
+</template>
+
+<script>
+// api接口
+import {
+  listGood,
+  getGood,
+  delGood,
+  addGood,
+  updateGood,
+} from "@/api/merchant/good";
+export default {
+  name: "Good",
+  dicts: ["tb_good_size_code", "tb_good_status", "tb_good_size"],
+  data() {
+    return {
+      loading: true,
+      ids: [],
+      single: true,
+      multiple: true,
+      showSearch: true,
+      total: 0,
+      goodList: [],
+      title: "",
+      open: false,
+      queryParams: {
+        displayId: null,
+        pageNum: 1,
+        pageSize: 100,
+        productName: "",
+        productCode: null,
+        createTime: null,
+        selectedDate: null,
+        profitDate: null,
+      },
+      productCount: 0, // 用于存储商品条数
+      totalProfit: 0, // 用于存储总利润
+      totalCost: 0, //用于存储货值
+      filterCategory: null, //新增筛选类型状态
+      form: {},
+      rules: {
+        productName: [
+          { required: true, message: "商品不能为空", trigger: "blur" },
+        ],
+        productCode: [
+          { required: true, message: "货号不能为空", trigger: "blur" },
+        ],
+        cost: [{ required: true, message: "成本不能为空", trigger: "blur" }],
+      },
+    };
+  },
+  created() {},
+  computed: {
+    filteredGoods() {
+      // 过滤商品列表
+      let filtered = this.goodList;
+      filtered = this.goodList.filter((good) => good.status !== "sold");
+      if (this.filterCategory === "shoes") {
+        //筛选有码数或尺寸的商品
+        filtered = filtered.filter((good) => good.sizeCode || good.dimensions);
+      } else if (this.filterCategory === "clothing") {
+        //筛选出没有码数和尺寸的商品
+        filtered = filtered.filter((good) => !good.sizeCode && good.dimensions);
+      } else if (this.filterCategory === "other") {
+        //筛选出没有码数和尺寸的商品
+        filtered = filtered.filter(
+          (good) => !good.sizeCode && !good.dimensions
+        );
+      }
+
+      // 过滤已售出的商品
+      return filtered;
+    },
+  },
+  created() {
+    this.getList();
+    const savedProductName = sessionStorage.getItem("productName");
+    if (savedProductName) {
+      this.queryParams.productName = savedProductName; // Set the saved value to the input field
+    }
+  },
+  methods: {
+    //按照分类过滤商品
+    filterByCategory(category) {
+      this.filterCategory = category; //设置当前筛选类别
+      this.getList(); //新商品列表
+    },
+    getList() {
+      this.loading = true;
+      listGood(this.queryParams).then((response) => {
+        this.goodList = response.rows.map((item) => ({
+          ...item,
+          isSold: item.isSold || false, // 添加 isSold 字段的默认值
+        }));
+        this.total = response.total;
+
+        //计算货值
+        this.totalCost = this.goodList
+          .filter((good) => good.status !== "sold")
+          .reduce((sum, good) => sum + parseFloat(good.cost || 0), 0);
+        this.loading = false;
+      });
+    },
+    // 取消按钮
+    cancel() {
+      this.open = false;
+      this.reset();
+    },
+    // 表单重置
+    reset() {
+      this.form = {
+        displayId: null,
+        productName: null,
+        productCode: null,
+        sizeCode: null,
+        dimensions: null,
+        cost: null,
+        status: null,
+        salePrice: null,
+        totalValue: null,
+        createTime: null,
+        dateTime: null,
+        profit: null,
+        quantity: 1,
+      };
+      this.resetForm("form");
+    },
+    handleQuery() {
+      this.queryParams.pageNum = 1;
+      this.getList();
+    },
+    //根据日期改变
+    handleDateChange() {
+      this.queryParams.pageNum = 1;
+      this.getList();
+    },
+    resetQuery() {
+      if (this.queryParams.productName) {
+        sessionStorage.setItem("productName", this.queryParams.productName); // Save input to sessionStorage
+      }
+      this.resetForm("queryForm");
+      this.handleQuery();
+    },
+    handleSelectionChange(selection) {
+      this.ids = selection.map((item) => item.id);
+      this.single = selection.length !== 1;
+      //this.status = returned;
+      this.multiple = !selection.length;
+    },
+    //增加货量
+    handleAdd() {
+      this.reset();
+      this.open = true;
+      this.title = "添加仓库";
+    },
+    // 修改按钮操作
+    handleUpdate(row) {
+      this.reset();
+      const id = row.id || this.ids;
+      getGood(id).then((response) => {
+        this.form = response.data;
+        this.open = true;
+        this.title = "修改仓库";
+      });
+    },
+    // 提交表单
+    submitForm() {
+      this.$refs["form"].validate((valid) => {
+        if (valid) {
+          const quantity = this.form.quantity || 1; // 获取用户输入的数量
+          const rowsToAdd = [];
+
+          // 根据数量生成对应数量的行数据
+          for (let i = 0; i < quantity; i++) {
+            const newRow = {
+              ...this.form, // 复制表单数据
+              productName: `${this.form.productName} (${i + 1})`, // 给商品名称添加不同编���
+              productCode: `${this.form.productCode}-${i + 1}`, // 给货号添加不同编号
+            };
+
+            // 如果是新增操作，确保 id 为 null
+            if (this.form.id == null) {
+              newRow.id = null; // 确保新增时 id 为 null
+            } else {
+              // 修改操作保持现有的 id
+              newRow.id = this.form.id;
+            }
+
+            rowsToAdd.push(newRow);
+          }
+
+          // 判断操作类型：根据表单 id 决定是新增还是修改
+          if (this.form.id == null) {
+            // 批量新增商品
+            Promise.all(rowsToAdd.map((row) => addGood(row)))
+              .then(() => {
+                this.$modal.msgSuccess("新增成功");
+                this.open = false; // 关闭弹窗
+                this.getList(); // 刷新列表
+              })
+              .catch((error) => {
+                this.$modal.msgError("新增失败");
+              });
+          } else {
+            // 批量修改商品
+            Promise.all(rowsToAdd.map((row) => updateGood(row)))
+              .then(() => {
+                this.$modal.msgSuccess("修改成功");
+                this.open = false; // 关闭弹窗
+                this.getList(); // 刷新列表
+              })
+              .catch((error) => {
+                this.$modal.msgError("修改失败");
+              });
+          }
+        }
+      });
+    },
+    //删除
+    handleDelete(row) {
+      const ids = row.id || this.ids;
+      this.$modal
+        .confirm('是否确认删除仓库编号为"' + ids + '"的数据项？')
+        .then(() => delGood(ids))
+        .then(() => {
+          this.getList();
+          this.$modal.msgSuccess("删除成功");
+        })
+        .catch(() => {});
+    },
+    //导出
+    handleExport() {
+      this.download(
+        "merchant/good/export",
+        { ...this.queryParams },
+        `good_${new Date().getTime()}.xlsx`
+      );
+    },
+    // 商品售出
+    async handleSell(good) {
+      try {
+        //1.让用户输入售价
+        const sale = prompt("请输入售价:");
+        //检查是否输入了有效售价
+        if (!sale || isNaN(sale)) {
+          alert("请输入有效的数字!");
+          return;
+        }
+        //2.更新商品的状态和售价
+        const updatedGood = {
+          ...good,
+          status: "sold", //更新商品状态
+          salePrice: sale, //设置售价
+        };
+        //调用接口更新商品信息
+        await updateGood(updatedGood);
+        alert("商品已成功售出!");
+        this.reset(); //
+      } catch (error) {
+        console.error("售出���品时发生错误:", error);
+        alert("售出商品时发生错误，请稍后重试!");
+      }
+    },
+    handleDateChange() {
+      this.queryParams.createTime = this.queryParams.selectedDate;
+      this.queryParams.profitDate = this.queryParams.selectedDate;
+
+      //执行查询
+      this.getProductCount();
+      this, getTotalProfit();
+    },
+    getProductCount() {
+      fetchTotalProfit(this.queryParams.selectedDate).then((profit) => {
+        this.totalProfit = profit; //更新总利润
+      });
+    },
+    //保留数据增加操作
+    handleIncreaseQuantity(row) {
+      this.reset(); // 重置表单内容
+      this.open = true; // 打开对话框
+      this.title = "增加货量"; // 设置对话框标题
+
+      this.isAdding = true; // 标记为增加操作
+      this.form = { ...row, id: null };
+    },
+    fetchSuggestions(queryString, cb) {
+      const suggestions = this.getSuggestions(queryString); // Assume this returns a list of suggestions
+      cb(suggestions);
+    },
+
+    // Dummy function for generating suggestions
+    getSuggestions(query) {
+      // You can replace this with an actual API call or static data
+      return [
+        { value: "Product 1" },
+        { value: "Product 2" },
+        { value: "Product 3" },
+      ].filter((item) =>
+        item.value.toLowerCase().includes(query.toLowerCase())
+      );
+    },
+  },
+};
+</script>
+
+<style lang="scss" scoped>
+.good-container {
+  min-height: 100vh;
+  padding: 2rem;
+  background: var(--bg-primary, #f5f7fa);
+  transition: all 0.3s ease;
+
+  @media (max-width: 768px) {
+    padding: 1rem;
+  }
+}
+
+.good-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  background: #fff;
+  padding: 1.25rem 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+
+  h1 {
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: #374151;
+    margin: 0;
+  }
+}
+
+.el-button {
+  transition: transform 0.2s ease;
+  border-radius: 8px;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  i {
+    margin-right: 8px;
+  }
+}
+
+// 响应式设计
+@media (max-width: 768px) {
+  .good-container {
+    padding: 1rem;
+  }
+
+  .good-header h1 {
+    font-size: 1.5rem;
+  }
+}
+
+// 表格样式优化
+:deep(.el-table) {
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+
+  th {
+    background: #f8f9fa !important;
+    font-weight: 600;
+    padding: 1rem;
+  }
+
+  td {
+    padding: 1rem;
+  }
+
+  .el-table__row {
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: rgba(0, 122, 255, 0.05) !important;
+    }
+  }
+}
+
+// 搜索表单样式
+.el-form {
+  background: linear-gradient(to right, #ffffff, #f8fafc);
+  padding: 1.25rem 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  margin-bottom: 1rem;
+  border: 1px solid #f1f5f9;
+
+  .el-form-item {
+    margin-bottom: 0.75rem;
+
+    :deep(.el-input__inner) {
+      border-radius: 8px;
+      border-color: #e5e7eb;
+      transition: all 0.2s ease;
+
+      &:hover {
+        border-color: #d1d5db;
+      }
+
+      &:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      }
+    }
+  }
+
+  // 日期选择器样式优化
+  :deep(.el-date-editor) {
+    .el-input__inner {
+      background: #fff;
+    }
+  }
+
+  // 按钮样式优化
+  .el-button {
+    padding: 0.5rem 1rem;
+    
+    &.el-button--primary {
+      background: #3b82f6;
+      border-color: #3b82f6;
+      
+      &:hover {
+        background: #2563eb;
+        border-color: #2563eb;
+      }
+    }
+  }
+}
+
+// 操作按钮样式
+.mb8 {
+  margin-bottom: 1rem;
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+
+  .el-button {
+    margin: 0;
+  }
+}
+
+// 总货值显示样式
+.good-cost {
+  background: linear-gradient(135deg, #f1f5f9, #f8fafc);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin-top: 0.75rem;
+  border: 1px solid #e2e8f0;
+
+  span {
+    font-weight: 500;
+    color: #374151;
+    display: flex;
+    align-items: center;
+    font-size: 0.95rem;
+  }
+}
+</style>

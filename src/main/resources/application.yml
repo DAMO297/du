@@ -1,0 +1,6 @@
+# OCR配置
+ocr:
+  tessdata:
+    path: /path/to/tessdata # Tesseract训练数据路径，需要根据实际情况配置
+
+# ... existing configurations ...

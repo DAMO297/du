@@ -1,0 +1,964 @@
+<template>
+  <div class="app-container">
+    <!-- 第一个容器：商品框，货号，创建时间，搜索和重置 -->
+    <div class="search-container">
+      <el-form
+        :model="queryParams"
+        ref="queryForm"
+        size="small"
+        :inline="true"
+        v-show="showSearch"
+        label-width="68px"
+        class="search-form"
+      >
+        <div class="search-items">
+          <!-- 商品输入框 -->
+          <el-form-item label="商品" prop="productName">
+            <el-input
+              v-model="queryParams.productName"
+              placeholder="请输入商品"
+              clearable
+              @keyup.enter.native="handleQuery"
+            />
+          </el-form-item>
+
+          <!-- 查询货号 -->
+          <el-form-item label="货号" prop="productCode">
+            <el-input
+              v-model="queryParams.productCode"
+              placeholder="请输入货号"
+              clearable
+              @keyup.enter.native="handleQuery"
+            />
+          </el-form-item>
+
+          <!-- 查询创建时间 -->
+          <el-form-item label="创建时间" prop="createTime">
+            <el-date-picker
+              clearable
+              v-model="queryParams.createTime"
+              type="date"
+              value-format="yyyy-MM-dd"
+              placeholder="请选择创建时间"
+              @change="handleQuery"
+            />
+          </el-form-item>
+
+          <!-- 搜索重置按钮 -->
+          <el-form-item class="form-actions">
+            <el-button
+              type="primary"
+              icon="el-icon-search"
+              size="mini"
+              @click="handleQuery"
+            >
+              搜索
+            </el-button>
+            <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">
+              重置
+            </el-button>
+          </el-form-item>
+        </div>
+      </el-form>
+    </div>
+    <!-- 第二个容器：时间范围，计算总利润，显示总利润 -->
+    <div class="profit-container">
+      <div class="profit-row">
+        <!-- 利润日期范围 -->
+        <el-form :model="queryParams" class="profit-form">
+          <el-form-item label="利润" label-width="53px">
+            <el-row :gutter="16">
+              <el-col :span="11">
+                <el-date-picker
+                  clearable
+                  v-model="queryParams.startDate"
+                  type="date"
+                  value-format="yyyy-MM-dd"
+                  placeholder="请选择开始时间"
+                  @change="handleQuery"
+                />
+              </el-col>
+              <el-col :span="11">
+                <el-date-picker
+                  clearable
+                  v-model="queryParams.endDate"
+                  type="date"
+                  value-format="yyyy-MM-dd"
+                  placeholder="请选择结束时间"
+                  @change="handleQuery"
+                />
+              </el-col>
+            </el-row>
+          </el-form-item>
+        </el-form>
+
+        <!-- 计算按钮和总利润展示 -->
+        <div class="profit-actions">
+          <el-button type="primary" @click="calculateTotalProfit">
+            计算总利润
+          </el-button>
+          <span class="total-profit">总利润: {{ totalProfit }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <!-- 第三个容器：导出和分类筛选 -->
+      <div class="export-category">
+        <el-button
+          type="warning"
+          plain
+          icon="el-icon-download"
+          size="mini"
+          @click="handleExport"
+          v-hasPermi="['merchant:good:export']"
+          >导出</el-button
+        >
+
+        <!-- 分类按钮 -->
+        <div class="category-buttons">
+          <el-button
+            type="primary"
+            plain
+            @click="filterByCategory('shoes')"
+            size="mini"
+          >
+            鞋子
+          </el-button>
+          <el-button
+            type="primary"
+            plain
+            @click="filterByCategory('clothing')"
+            size="mini"
+          >
+            服饰
+          </el-button>
+          <el-button
+            type="primary"
+            plain
+            @click="filterByCategory('other')"
+            size="mini"
+          >
+            其他
+          </el-button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 表格显示 -->
+    <el-table
+      v-loading="loading"
+      :data="filteredGoods"
+      @selection-change="handleSelectionChange"
+    >
+      <el-table-column label="序号" align="center">
+        <template slot-scope="scope">
+          {{
+            (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1
+          }}
+        </template>
+      </el-table-column>
+      <el-table-column label="商品" align="center" prop="productName" />
+      <el-table-column label="货号" align="center" prop="productCode" />
+      <el-table-column label="码数" align="center" prop="sizeCode">
+        <template slot-scope="scope">
+          <dict-tag
+            :options="dict.type.tb_good_size_code"
+            :value="scope.row.sizeCode"
+          />
+        </template>
+      </el-table-column>
+      <el-table-column label="尺寸" align="center" prop="dimensions">
+        <template slot-scope="scope">
+          <dict-tag
+            :options="dict.type.tb_good_size"
+            :value="scope.row.dimensions"
+          />
+        </template>
+      </el-table-column>
+      <el-table-column label="成本" align="center" prop="cost" />
+      <el-table-column label="售价" align="center" prop="salePrice" />
+      <el-table-column label="利润" align="center" prop="profit">
+        <template slot-scope="scope">
+          <span>{{ scope.row.profit === 0 ? "未售" : scope.row.profit }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column
+        label="创建时间"
+        align="center"
+        prop="createTime"
+        width="180"
+      >
+        <template slot-scope="scope">
+          <span>{{ parseTime(scope.row.createTime, "{y}-{m}-{d}") }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" align="center" prop="dateTime" width="180">
+        <template slot-scope="scope">
+          <span>{{ parseTime(scope.row.createTime, "{y}-{m}-{d}") }}</span>
+        </template>
+        <template slot-scope="scope">
+          <el-button
+            size="mini"
+            type="text"
+            icon="el-icon-edit"
+            @click="handleUpdate(scope.row)"
+            v-hasPermi="['merchant:good:edit']"
+            >修改</el-button
+          >
+          <el-button
+            size="mini"
+            type="text"
+            icon="el-icon-delete"
+            @click="handleDelete(scope.row)"
+            v-hasPermi="['merchant:good:remove']"
+            >删除</el-button
+          >
+        </template>
+      </el-table-column>
+    </el-table>
+
+    <!-- 分页组件 -->
+    <pagination
+      v-show="total > 0"
+      :total="total"
+      :page.sync="queryParams.pageNum"
+      :limit.sync="queryParams.pageSize"
+      @pagination="getList"
+    />
+    <!-- 添加或修改仓库对话框 -->
+    <el-dialog :title="title" :visible.sync="open" width="500px" append-to-body>
+      <el-form ref="form" :model="form" :rules="rules" label-width="80px">
+        <el-form-item label="商品" prop="productName" class="botton">
+          <el-input v-model="form.productName" placeholder="请输入商品" />
+        </el-form-item>
+        <el-form-item label="货号" prop="productCode" class="botton">
+          <el-input v-model="form.productCode" placeholder="请输入货号" />
+        </el-form-item>
+        <el-form-item label="码数" prop="sizeCode" class="botton">
+          <el-select v-model="form.sizeCode" placeholder="请选择码数">
+            <el-option
+              v-for="dict in dict.type.tb_good_size_code"
+              :key="dict.value"
+              :label="dict.label"
+              :value="dict.value"
+            ></el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="尺寸" prop="dimensions" class="botton">
+          <el-select v-model="form.dimensions" placeholder="请选择尺寸">
+            <el-option
+              v-for="dict in dict.type.tb_good_size"
+              :key="dict.value"
+              :label="dict.label"
+              :value="dict.value"
+            ></el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="成本" prop="cost" class="botton">
+          <el-input v-model="form.cost" placeholder="请输入成本" />
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button type="primary" @click="submitForm">确 定</el-button>
+        <el-button @click="cancel">取 消</el-button>
+      </div>
+    </el-dialog>
+  </div>
+</template>
+
+<script>
+import {
+  listGood,
+  getGood,
+  delGood,
+  addGood,
+  updateGood,
+} from "@/api/merchant/good";
+import * as echarts from "echarts";
+export default {
+  name: "Good",
+  dicts: ["tb_good_size_code", "tb_good_status", "tb_good_size"],
+  data() {
+    return {
+      loading: true,
+      ids: [],
+      single: true,
+      multiple: true,
+      showSearch: true,
+      total: 0,
+      goodList: [],
+      title: "",
+      open: false,
+      queryParams: {
+        pageNum: 1,
+        pageSize: 50,
+        productName: null,
+        createTime: null,
+        startDate: null,
+        endDate: null,
+      },
+      totalProfit: 0, //总利润
+      filterCategory: null, //新增筛选类型状态
+      rawData: [], // 原始商品数据
+      chartData: [], // 按月统计的利润数据
+      form: {},
+      rules: {
+        productName: [
+          { required: true, message: "商品不能为空", trigger: "blur" },
+        ],
+        productCode: [
+          { required: true, message: "货号不能为空", trigger: "blur" },
+        ],
+        cost: [{ required: true, message: "成本不能空", trigger: "blur" }],
+      },
+    };
+  },
+  created() {},
+  computed: {
+    // 过滤符合时间范围的商品
+    filteredGoods() {
+      let goods = this.goodList;
+      if (this.filterCategory === "shoes") {
+        //筛选出有码数或尺寸的商品
+        goods = goods.filter((good) => good.sizeCode || good.dimensions);
+      } else if (this.filterCategory === "clothing") {
+        //筛选出没有码数和尺寸的商品
+        goods = goods.filter((good) => !good.sizeCode && good.dimensions);
+      } else if (this.filterCategory === "other") {
+        //筛选出没有码数和尺寸的商品
+        goods = goods.filter((good) => !good.sizeCode && !good.dimensions);
+      }
+      if (this.queryParams.startDate && this.queryParams.endDate) {
+        const startDate = this.queryParams.startDate;
+        const endDate = this.queryParams.endDate;
+        goods = goods.filter((good) => {
+          const createTime = good.createTime.split(" ")[0];
+          console.log(createTime, startDate, endDate);
+
+          return createTime >= startDate && createTime <= endDate;
+        });
+      }
+      return goods;
+    },
+  },
+  created() {
+    this.getList();
+  },
+  mounted() {
+    this.fetchData();
+  },
+  methods: {
+    //按照分类滤商品
+    filterByCategory(category) {
+      this.filterCategory = category; //设置当前筛选类别
+      this.getList(); //刷新商品列表
+    },
+    async getList() {
+      console.log("分页参数：", this.queryParams); // 打印查询参数
+      this.loading = true;
+      try {
+        const response = await listGood(this.queryParams); // 请求数据
+        this.goodList = response.rows; // 当前页数据
+        this.total = response.total; // 总数据量
+      } catch (error) {
+        console.error("获取数据失败:", error);
+      } finally {
+        this.loading = false;
+      }
+      // 在获取列表之前检查是否有时间范围的选择
+      let filteredParams = { ...this.queryParams };
+
+      // if (this.queryParams.startDate && this.queryParams.endDate) {
+      //   // 将日期范围加入过滤参数
+      //   filteredParams.startDate = this.queryParams.startDate;
+      //   filteredParams.endDate = this.queryParams.endDate;
+      // }
+
+      // listGood(filteredParams).then((response) => {
+      //   this.goodList = response.rows.map((item) => ({
+      //     ...item,
+      //     isSold: item.isSold || false, // 添加 isSold 字段的默认值
+      //   }));
+      //   this.total = response.total;
+      //   this.loading = false;
+      // });
+    },
+    // 取消按钮
+    cancel() {
+      this.open = false;
+      this.reset();
+    },
+    // 表单重置
+    reset() {
+      this.form = {
+        id: null,
+        productName: null,
+        productCode: null,
+        sizeCode: null,
+        dimensions: null,
+        cost: null,
+        status: null,
+        salePrice: null,
+        totalValue: null,
+        createTime: null,
+        dateTime: null,
+        profit: null,
+      };
+      this.resetForm("form");
+    },
+    handleQuery() {
+      this.queryParams.pageNum = 1;
+      this.getList();
+    },
+    resetQuery() {
+      this.resetForm("queryForm");
+      this.handleQuery();
+    },
+    // 多选框选中数据
+    handleSelectionChange(selection) {
+      this.ids = selection.map((item) => item.id);
+      this.single = selection.length !== 1;
+      this.multiple = !selection.length;
+    },
+    //添加仓库
+    handleAdd() {
+      this.reset();
+      this.open = true;
+      this.title = "添加仓库";
+    },
+    // 修改按钮操作
+    handleUpdate(row) {
+      this.reset();
+      const id = row.id || this.ids;
+      getGood(id).then((response) => {
+        this.form = response.data;
+        this.open = true;
+        this.title = "修改仓库";
+      });
+    },
+    submitForm() {
+      this.$refs["form"].validate((valid) => {
+        if (valid) {
+          if (this.form.id != null) {
+            updateGood(this.form).then((response) => {
+              this.$modal.msgSuccess("修改成功");
+              this.open = false;
+              this.getList();
+            });
+          } else {
+            addGood(this.form).then((response) => {
+              this.$modal.msgSuccess("新增成功");
+              this.open = false;
+              this.getList();
+            });
+          }
+        }
+      });
+    },
+    // 删除按钮操作
+    handleDelete(row) {
+      const ids = row.id || this.ids;
+      this.$modal
+        .confirm('是否确认删除仓库编号为"' + ids + '"的数据项？')
+        .then(() => delGood(ids))
+        .then(() => {
+          this.getList();
+          this.$modal.msgSuccess("删除成功");
+        })
+        .catch(() => {});
+    },
+    // 售出商品
+    async handleSell(good) {
+      try {
+        // 1. 让用户输入售价
+        const sale = prompt("请输入售价：");
+        // 检查是否输入了有效的售价
+        if (!sale || isNaN(sale)) {
+          alert("请输入有效的数字作为售价！");
+          return;
+        }
+        // 2. 更新商品的状态和售价
+        const updatedGood = {
+          ...good,
+          status: "sold", // 更新商品状态
+          salePrice: sale, // 置售价
+        };
+        // 3. 调用接口更新商品信息
+        await updateGood(updatedGood);
+        // 成功后刷新列表或做出其他响应
+        alert("商品已成功售出！");
+        this.reset(); // 假设你有个方法用于刷新商品列表
+      } catch (error) {
+        console.error("售出商品时发生错误：", error);
+        alert("售出商品时发生错误，请稍后重试！");
+      }
+    },
+    //处理导出
+    handleExport() {
+      this.download(
+        "merchant/good/export",
+        { ...this.queryParams },
+        `good_${new Date().getTime()}.xlsx`
+      );
+    },
+    //获取所有商品数据
+    async fetchAllGoods() {
+      try {
+        const response = await listGood({ pageNum: 1, pageSize: 99999 });
+        return response.rows;
+      } catch (error) {
+        console.error("获取商品列表时发生错误：", error);
+        return [];
+      }
+    },
+    // 计算总利润
+    async calculateTotalProfit() {
+      try {
+        // 获取所有商品
+        const allGoods = await this.fetchAllGoods();
+
+        // 如果有选择时间范围，进行过滤
+        let filteredGoods = allGoods;
+
+        if (this.queryParams.startDate && this.queryParams.endDate) {
+          const startDate = this.queryParams.startDate;
+          const endDate = this.queryParams.endDate;
+
+          // 过滤商品确保它们的 `createTime` 在选择的时间范围内
+          filteredGoods = filteredGoods.filter((good) => {
+            const createTime = good.createTime.split(" ")[0]; // 提取日期部分
+            return createTime >= startDate && createTime <= endDate;
+          });
+        }
+
+        // 计算符合条件商品的总利润
+        this.totalProfit = filteredGoods
+          .reduce((total, good) => {
+            return total + (good.profit || 0);
+          }, 0)
+          .toFixed(2);
+      } catch (error) {
+        console.error("计算利润时发生错误：", error);
+      }
+    },
+    // 初始化页面时，计算总利润
+    async mounted() {
+      await this.calculateTotalProfit();
+      this.getList();
+    },
+
+    // 调用接口获取商品数据
+    async fetchData() {
+      try {
+        const response = await listGood({ pageNum: 1, pageSize: 99999 });
+        console.log("接口返回数据：", response);
+        if (response && response.code === 200 && Array.isArray(response.rows)) {
+          this.rawData = response.rows; // 确保数据是数组格式
+          console.log("已保存 rawData：", this.rawData); // 确认 rawData
+          this.processData(); // 处理数据
+          this.drawChart(); // 调用改写后的 drawChart 方法
+        } else {
+          console.error(
+            "接口返回的数据格式错误，rows 不为数组或 code 不为 200"
+          );
+        }
+      } catch (error) {
+        console.error("获取商品数据失败：", error);
+      }
+    },
+
+    // 处理数据：按月统计利润
+    processData() {
+      this.monthlyData = {}; // 存储按月统计的数据
+
+      if (
+        !this.rawData ||
+        !Array.isArray(this.rawData) ||
+        this.rawData.length === 0
+      ) {
+        console.error("rawData 数据无效或格式错误", this.rawData);
+        return;
+      }
+
+      this.rawData.forEach((item) => {
+        if (item.dateTime && typeof item.dateTime === "string") {
+          const month = item.dateTime.substring(0, 7); // 获取年月��如 "2024-10"
+          if (!this.monthlyData[month]) {
+            this.monthlyData[month] = 0;
+          }
+
+          if (typeof item.profit === "number") {
+            this.monthlyData[month] += item.profit;
+          } else {
+            console.warn(`无效的 profit 数据：`, item.profit);
+          }
+        } else {
+          console.warn(`无效的 dateTime 数据：`, item.dateTime);
+        }
+      });
+
+      console.log("按月统计的利润：", this.monthlyData);
+    },
+
+    // 初始化 ECharts 图表
+    drawChart() {
+      if (
+        !this.monthlyData ||
+        typeof this.monthlyData !== "object" ||
+        Object.keys(this.monthlyData).length === 0
+      ) {
+        console.error("monthlyData 无效或为空", this.monthlyData);
+        return;
+      }
+
+      // 获取月份数据
+      const months = Object.keys(this.monthlyData);
+
+      if (months.length === 0) {
+        console.warn("没有按月统计的数据！");
+        return;
+      }
+
+      // 图表数据
+      const chartData = months.map((month) =>
+        this.monthlyData[month].toFixed(2)
+      );
+
+      // 获取 DOM 元素
+      let chartDom = document.getElementById("demo");
+      if (!chartDom) {
+        console.error("图表器未找到");
+        return;
+      }
+
+      // 初始化图表实例
+      let myChart = echarts.init(chartDom);
+
+      // 配置项
+      let option = {
+        title: {
+          text: "每月利润统计",
+        },
+        xAxis: {
+          type: "category",
+          data: months, // 使用处理后的月份数据
+        },
+        yAxis: {
+          type: "value",
+        },
+        series: [
+          {
+            data: chartData,
+            type: "line",
+            smooth: true,
+            label: {
+              show: true, // 开启数据标签
+              position: "top", // 数据标签显示位置
+              formatter: "{c}", // 使用默认格式，显示数字
+              color: "#000", // 字体颜色
+              fontSize: 12, // 字体大小
+            },
+          },
+        ],
+      };
+
+      // 设置图表配置项
+      myChart.setOption(option);
+    },
+  },
+};
+</script>
+<style lang="scss" scoped>
+// 修改通用卡片容器样式
+%card-container {
+  background: var(--bg-secondary, #ffffff);
+  border-radius: 8px; // 减小圆角
+  padding: 0.75rem; // 减小内边距
+  margin-bottom: 0.5rem; // 减小容器间距
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05); // 减淡阴影
+  // 移除边框
+  border: none;
+  transition: all 0.3s ease;
+}
+
+// 通用按钮样式
+%button-style {
+  height: 32px;
+  padding: 0 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  i {
+    margin-right: 6px;
+    font-size: 14px;
+  }
+}
+
+// 主容器样式
+.app-container {
+  min-height: 100vh;
+  padding: 1rem; // 减小整体内边距
+  background: var(--bg-primary, #f5f7fa);
+  transition: all 0.3s ease;
+}
+
+// 搜索区域
+.search-container {
+  @extend %card-container;
+
+  .search-form {
+    .el-form-item {
+      margin-bottom: 0;
+      margin-right: 12px; // 减小表单项间距
+
+      :deep(.el-input__inner) {
+        height: 32px;
+        line-height: 32px;
+        border-radius: 8px;
+      }
+    }
+
+    .form-actions {
+      .el-button {
+        @extend %button-style;
+      }
+    }
+  }
+}
+
+// 响应式处理
+@media screen and (max-width: 1200px) {
+  .search-container .search-form {
+    flex-wrap: wrap;
+
+    .search-items {
+      flex-wrap: wrap;
+    }
+
+    .form-actions {
+      margin-left: 0;
+      width: 100%;
+      justify-content: flex-end;
+    }
+  }
+}
+
+// 利润统计区域
+.profit-container {
+  @extend %card-container;
+
+  .profit-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+
+    .profit-form {
+      flex: 0 1 auto;
+      margin-bottom: 0;
+      max-width: 500px;
+      margin-left: 0.8rem; // 添加左边距，将整个表单向右移动
+
+      .el-form-item {
+        margin-bottom: 0;
+
+        // 调整标签的位置
+        :deep(.el-form-item__label) {
+          padding-left: 1rem; // 增加标签的左边距
+        }
+
+        .el-row {
+          flex-wrap: nowrap;
+          margin: 0 -8px !important; // 调整外边距以配合新的 gutter
+          
+          .el-col {
+            padding-left: 8px;  // 增加内边距
+            padding-right: 8px; // 增加内边距
+          }
+
+          :deep(.el-date-picker) {
+            width: 160px;
+            
+            .el-input__inner {
+              // 确保输入框样式统一
+              height: 32px;
+              line-height: 32px;
+              border-radius: 8px;
+            }
+          }
+        }
+      }
+    }
+
+    .profit-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem; // 减小按钮和文本间距
+      white-space: nowrap;
+      margin-left: 0.75rem; // 减小左边距
+
+      .el-button {
+        @extend %button-style;
+        background: var(--primary-color, #409eff);
+        border: none;
+        color: white;
+      }
+
+      .total-profit {
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-size: 14px;
+        background: rgba(64, 158, 255, 0.1);
+        color: var(--primary-color, #409eff);
+      }
+    }
+  }
+}
+
+// 响应式处理
+@media screen and (max-width: 1200px) {
+  .profit-container {
+    .profit-row {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 1rem;
+
+      .profit-form {
+        .el-row {
+          margin: 0 !important;
+        }
+      }
+
+      .profit-actions {
+        justify-content: flex-end;
+      }
+    }
+  }
+}
+
+// 导出和分类区域
+.export-category {
+  @extend %card-container;
+  display: flex;
+  align-items: center;
+  gap: 12px; // 减小按钮间距
+
+  .el-button {
+    @extend %button-style;
+  }
+
+  .category-buttons {
+    display: flex;
+    gap: 6px; // 减小分类按钮间距
+
+    .el-button {
+      &.is-plain {
+        &:hover {
+          color: var(--primary-color);
+          border-color: var(--primary-color);
+          background: rgba(64, 158, 255, 0.1);
+        }
+      }
+    }
+  }
+}
+
+// 响应式处理
+@media screen and (max-width: 768px) {
+  %card-container {
+    padding: 0.5rem; // 移动端更小的内边距
+    border-radius: 6px; // 移动端更小的圆角
+  }
+
+  .search-container,
+  .profit-container,
+  .export-category {
+    margin-bottom: 0.4rem; // 移动端更小的间距
+  }
+}
+
+// 表格样式优化
+:deep(.el-table) {
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+
+  th {
+    background: #f8f9fa !important;
+    font-weight: 600;
+    padding: 1rem;
+  }
+
+  td {
+    padding: 1rem;
+  }
+
+  .el-table__row {
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: rgba(0, 122, 255, 0.05) !important;
+    }
+  }
+}
+
+// 动画效果
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// 响应式设计
+@media (max-width: 1024px) {
+  .search-form,
+  .profit-form,
+  .export-category {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .form-actions,
+  .profit-actions,
+  .category-buttons {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+}
+
+// 加载动画
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.3s ease;
+}
+
+// 工具提示样式
+:deep(.el-tooltip__popper) {
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+</style>

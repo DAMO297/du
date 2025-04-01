@@ -1,0 +1,16 @@
+<project>
+  <dependencies>
+    <!-- OCR依赖 -->
+    <dependency>
+      <groupId>net.sourceforge.tess4j</groupId>
+      <artifactId>tess4j</artifactId>
+      <version>5.8.0</version>
+    </dependency>
+
+    <!-- Spring Boot Starter -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+  </dependencies>
+</project> 
