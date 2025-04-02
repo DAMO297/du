@@ -16,10 +16,7 @@
       :file-list="fileList"
       :on-preview="handlePictureCardPreview"
       :class="{hide: this.fileList.length >= this.limit}"
-<<<<<<< HEAD
       @change="handleChange"
-=======
->>>>>>> ffcf9a742f1b49cc2a1ad7b229437a6da1ba255a
     >
       <i class="el-icon-plus"></i>
     </el-upload>
@@ -208,7 +205,6 @@ export default {
         }
       }
       return strs != '' ? strs.substr(0, strs.length - 1) : '';
-<<<<<<< HEAD
     },
     /** 处理文件变化事件 */
     handleChange(file) {
@@ -216,9 +212,6 @@ export default {
         this.$emit('change', file.raw);
       }
     },
-=======
-    }
->>>>>>> ffcf9a742f1b49cc2a1ad7b229437a6da1ba255a
   }
 };
 </script>

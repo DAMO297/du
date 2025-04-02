@@ -47,11 +47,10 @@ export function delCost(id) {
 export function queryLogisticsInfo(trackingNumber) {
   return request({
     url: "/merchant/express/query",
-    method: "post",
-    data: { trackingNumber },
+    method: "get",
+    params: { trackingNumber },
   });
 }
-
 // OCR图片识别
 export function recognizeImage(base64Image) {
   return request({

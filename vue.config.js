@@ -1,10 +1,6 @@
 "use strict";
 const path = require("path");
 
-<<<<<<< HEAD
-=======
-
->>>>>>> ffcf9a742f1b49cc2a1ad7b229437a6da1ba255a
 function resolve(dir) {
   return path.join(__dirname, dir);
 }
@@ -13,11 +9,7 @@ const CompressionPlugin = require("compression-webpack-plugin");
 
 const name = process.env.VUE_APP_TITLE || "得物账单货物管理系统"; // 网页标题
 
-<<<<<<< HEAD
 const port = process.env.port || process.env.npm_config_port || 3000; // 端口
-=======
-const port = process.env.port || process.env.npm_config_port || 80; // 端口
->>>>>>> ffcf9a742f1b49cc2a1ad7b229437a6da1ba255a
 
 // vue.config.js 配置说明
 //官方vue.config.js 参考文档 https://cli.vuejs.org/zh/config/#css-loaderoptions
@@ -38,15 +30,9 @@ module.exports = {
   transpileDependencies: ["quill"],
   // webpack-dev-server 相关配置
   devServer: {
-<<<<<<< HEAD
     host: "localhost",
     port: port,
     open: false,
-=======
-    host: "0.0.0.0",
-    port: port,
-    open: true,
->>>>>>> ffcf9a742f1b49cc2a1ad7b229437a6da1ba255a
     proxy: {
       // detail: https://cli.vuejs.org/config/#devserver-proxy
       [process.env.VUE_APP_BASE_API]: {
@@ -83,10 +69,6 @@ module.exports = {
         minRatio: 0.8, // 压缩比例，小于 80% 的文件不会被压缩
         deleteOriginalAssets: false, // 压缩后删除原文件
       }),
-<<<<<<< HEAD
-=======
-      
->>>>>>> ffcf9a742f1b49cc2a1ad7b229437a6da1ba255a
     ],
   },
   chainWebpack(config) {
