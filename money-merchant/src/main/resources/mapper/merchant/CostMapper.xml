@@ -1,36 +1,45 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper
-PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
-"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.money.merchant.mapper.CostMapper">
-    
+
     <resultMap type="Cost" id="CostResult">
         <result property="id"    column="id"    />
+        <result property="userId"    column="user_id"    />
+        <result property="deptId"    column="dept_id"    />
         <result property="logisticsCompany"    column="logistics_company"    />
         <result property="lastFourDigits"    column="last_four_digits"    />
+        <result property="fullTrackingNumber"    column="full_tracking_number"    />
         <result property="costAmount"    column="cost_amount"    />
         <result property="createTime"    column="create_time"    />
         <result property="dateTime"    column="date_time"    />
+        <result property="shippingDate"    column="shipping_date"    />
+        <result property="recipientProvince"    column="recipient_province"    />
+        <result property="recipientCity"    column="recipient_city"    />
+        <result property="recipientDistrict"    column="recipient_district"    />
+        <result property="recipientAddress"    column="recipient_address"    />
+        <result property="weight"    column="weight"    />
+        <result property="receiptImageUrl"    column="receipt_image_url"    />
+        <result property="imageUploadTime"    column="image_upload_time"    />
     </resultMap>
 
     <sql id="selectCostVo">
-        select id, logistics_company, last_four_digits, cost_amount, create_time, date_time from tb_cost
+        select id, user_id, dept_id, logistics_company, last_four_digits, full_tracking_number, cost_amount, create_time, date_time, shipping_date, recipient_province, recipient_city, recipient_district, recipient_address, weight, receipt_image_url, image_upload_time from tb_cost
     </sql>
 
     <select id="selectCostList" parameterType="Cost" resultMap="CostResult">
-        select c.* 
-        from tb_cost c
-        left join sys_user u on u.user_id = c.user_id
-        left join sys_dept d on d.dept_id = c.dept_id
+        <include refid="selectCostVo"/>
         <where>
-            <if test="logisticsCompany != null and logisticsCompany != ''"> and c.logistics_company = #{logisticsCompany}</if>
-            <if test="lastFourDigits != null and lastFourDigits != ''"> and c.last_four_digits = #{lastFourDigits}</if>
-            <if test="costAmount != null"> and c.cost_amount = #{costAmount}</if>
-            <if test="dateTime != null"> and c.date_time = #{dateTime}</if>
-            ${params.dataScope}
+            <if test="logisticsCompany != null  and logisticsCompany != ''"> and logistics_company = #{logisticsCompany}</if>
+            <if test="fullTrackingNumber != null  and fullTrackingNumber != ''"> and full_tracking_number = #{fullTrackingNumber}</if>
+            <if test="costAmount != null "> and cost_amount = #{costAmount}</if>
+            <if test="dateTime != null "> and date_time = #{dateTime}</if>
+            <if test="shippingDate != null "> and shipping_date = #{shippingDate}</if>
+            <if test="recipientAddress != null  and recipientAddress != ''"> and recipient_address = #{recipientAddress}</if>
         </where>
     </select>
-    
+
     <select id="selectCostById" parameterType="Long" resultMap="CostResult">
         <include refid="selectCostVo"/>
         where id = #{id}
@@ -39,33 +48,62 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <insert id="insertCost" parameterType="Cost" useGeneratedKeys="true" keyProperty="id">
         insert into tb_cost
         <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="userId != null">user_id,</if>
+            <if test="deptId != null">dept_id,</if>
             <if test="logisticsCompany != null and logisticsCompany != ''">logistics_company,</if>
-            <if test="lastFourDigits != null and lastFourDigits != ''">last_four_digits,</if>
+            <if test="lastFourDigits != null">last_four_digits,</if>
+            <if test="fullTrackingNumber != null and fullTrackingNumber != ''">full_tracking_number,</if>
             <if test="costAmount != null">cost_amount,</if>
             <if test="createTime != null">create_time,</if>
             <if test="dateTime != null">date_time,</if>
-            <if test="userId != null">user_id,</if>
-            <if test="deptId != null">dept_id,</if>
+            <if test="shippingDate != null">shipping_date,</if>
+            <if test="recipientProvince != null">recipient_province,</if>
+            <if test="recipientCity != null">recipient_city,</if>
+            <if test="recipientDistrict != null">recipient_district,</if>
+            <if test="recipientAddress != null">recipient_address,</if>
+            <if test="weight != null">weight,</if>
+            <if test="receiptImageUrl != null">receipt_image_url,</if>
+            <if test="imageUploadTime != null">image_upload_time,</if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="userId != null">#{userId},</if>
+            <if test="deptId != null">#{deptId},</if>
             <if test="logisticsCompany != null and logisticsCompany != ''">#{logisticsCompany},</if>
-            <if test="lastFourDigits != null and lastFourDigits != ''">#{lastFourDigits},</if>
+            <if test="lastFourDigits != null">#{lastFourDigits},</if>
+            <if test="fullTrackingNumber != null and fullTrackingNumber != ''">#{fullTrackingNumber},</if>
             <if test="costAmount != null">#{costAmount},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="dateTime != null">#{dateTime},</if>
-            <if test="userId != null">#{userId},</if>
-            <if test="deptId != null">#{deptId},</if>
+            <if test="shippingDate != null">#{shippingDate},</if>
+            <if test="recipientProvince != null">#{recipientProvince},</if>
+            <if test="recipientCity != null">#{recipientCity},</if>
+            <if test="recipientDistrict != null">#{recipientDistrict},</if>
+            <if test="recipientAddress != null">#{recipientAddress},</if>
+            <if test="weight != null">#{weight},</if>
+            <if test="receiptImageUrl != null">#{receiptImageUrl},</if>
+            <if test="imageUploadTime != null">#{imageUploadTime},</if>
         </trim>
     </insert>
 
     <update id="updateCost" parameterType="Cost">
         update tb_cost
         <trim prefix="SET" suffixOverrides=",">
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="deptId != null">dept_id = #{deptId},</if>
             <if test="logisticsCompany != null and logisticsCompany != ''">logistics_company = #{logisticsCompany},</if>
-            <if test="lastFourDigits != null and lastFourDigits != ''">last_four_digits = #{lastFourDigits},</if>
+            <if test="lastFourDigits != null">last_four_digits = #{lastFourDigits},</if>
+            <if test="fullTrackingNumber != null and fullTrackingNumber != ''">full_tracking_number = #{fullTrackingNumber},</if>
             <if test="costAmount != null">cost_amount = #{costAmount},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="dateTime != null">date_time = #{dateTime},</if>
+            <if test="shippingDate != null">shipping_date = #{shippingDate},</if>
+            <if test="recipientProvince != null">recipient_province = #{recipientProvince},</if>
+            <if test="recipientCity != null">recipient_city = #{recipientCity},</if>
+            <if test="recipientDistrict != null">recipient_district = #{recipientDistrict},</if>
+            <if test="recipientAddress != null">recipient_address = #{recipientAddress},</if>
+            <if test="weight != null">weight = #{weight},</if>
+            <if test="receiptImageUrl != null">receipt_image_url = #{receiptImageUrl},</if>
+            <if test="imageUploadTime != null">image_upload_time = #{imageUploadTime},</if>
         </trim>
         where id = #{id}
     </update>
@@ -75,7 +113,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </delete>
 
     <delete id="deleteCostByIds" parameterType="String">
-        delete from tb_cost where id in 
+        delete from tb_cost where id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>

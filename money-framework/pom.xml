@@ -53,6 +53,12 @@
             <artifactId>oshi-core</artifactId>
         </dependency>
 
+        <!-- 通用工具-->
+        <dependency>
+            <groupId>com.money</groupId>
+            <artifactId>money-common</artifactId>
+        </dependency>
+
         <!-- 系统模块-->
         <dependency>
             <groupId>com.money</groupId>

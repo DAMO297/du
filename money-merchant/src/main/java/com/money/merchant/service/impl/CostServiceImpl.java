@@ -56,6 +56,20 @@ public class CostServiceImpl implements ICostService
     public int insertCost(Cost cost)
     {
         cost.setCreateTime(DateUtils.getNowDate());
+        
+        // 检查imageUploadTime是否是图片路径
+        if (cost.getImageUploadTime() != null && cost.getImageUploadTime().startsWith("/profile/upload/")) {
+            // 如果是图片路径，应该放入receiptImageUrl字段，同时设置当前时间为imageUploadTime
+            cost.setReceiptImageUrl(cost.getImageUploadTime());
+            cost.setImageUploadTime(DateUtils.parseDateToStr("yyyy-MM-dd HH:mm:ss", DateUtils.getNowDate()));
+        } else {
+            // 正常情况下设置当前时间
+            cost.setImageUploadTime(DateUtils.parseDateToStr("yyyy-MM-dd HH:mm:ss", DateUtils.getNowDate()));
+        }
+        
+        if (cost.getLogisticsCompany() == null || cost.getLogisticsCompany().isEmpty()) {
+            cost.setLogisticsCompany("SFEXPRESS"); // 设置默认值
+        }
         return costMapper.insertCost(cost);
     }
 
@@ -68,6 +82,12 @@ public class CostServiceImpl implements ICostService
     @Override
     public int updateCost(Cost cost)
     {
+        // 检查imageUploadTime是否是图片路径
+        if (cost.getImageUploadTime() != null && cost.getImageUploadTime().startsWith("/profile/upload/")) {
+            // 如果是图片路径，应该放入receiptImageUrl字段，同时设置当前时间为imageUploadTime
+            cost.setReceiptImageUrl(cost.getImageUploadTime());
+            cost.setImageUploadTime(DateUtils.parseDateToStr("yyyy-MM-dd HH:mm:ss", DateUtils.getNowDate()));
+        }
         return costMapper.updateCost(cost);
     }
 

@@ -15,5 +15,10 @@
             <groupId>com.money</groupId>
             <artifactId>money-framework</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>fastjson</artifactId>
+            <version>1.2.83</version>
+        </dependency>
     </dependencies>
 </project>
