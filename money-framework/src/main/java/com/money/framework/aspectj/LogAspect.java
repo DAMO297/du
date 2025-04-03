@@ -84,8 +84,14 @@ public class LogAspect
     {
         try
         {
-            // 获取当前的用户
-            LoginUser loginUser = SecurityUtils.getLoginUser();
+            // 获取当前的用户 - 安全获取用户信息
+            LoginUser loginUser = null;
+            try {
+                loginUser = SecurityUtils.getLoginUser();
+            } catch (Exception ex) {
+                // 如果获取用户信息失败，继续处理日志记录
+                log.warn("获取当前用户信息失败: {}", ex.getMessage());
+            }
 
             // *========数据库日志=========*//
             SysOperLog operLog = new SysOperLog();
@@ -102,6 +108,11 @@ public class LogAspect
                 {
                     operLog.setDeptName(currentUser.getDept().getDeptName());
                 }
+            }
+            else
+            {
+                // 未登录情况下使用默认值
+                operLog.setOperName("unknown");
             }
 
             if (e != null)
