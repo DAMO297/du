@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.money.merchant.mapper.CostReportMapper">
+    
+    <resultMap type="com.money.merchant.domain.CostReport" id="CostReportResult">
+        <id     property="id"                  column="id"                   />
+        <result property="userId"              column="user_id"              />
+        <result property="deptId"              column="dept_id"              />
+        <result property="reportType"          column="report_type"          />
+        <result property="reportName"          column="report_name"          />
+        <result property="reportPeriod"        column="report_period"        />
+        <result property="startDate"           column="start_date"           />
+        <result property="endDate"             column="end_date"             />
+        <result property="totalCost"           column="total_cost"           />
+        <result property="itemCount"           column="item_count"           />
+        <result property="averageCost"         column="average_cost"         />
+        <result property="reportStatus"        column="report_status"        />
+        <result property="createBy"            column="create_by"            />
+        <result property="createTime"          column="create_time"          />
+        <result property="updateBy"            column="update_by"            />
+        <result property="updateTime"          column="update_time"          />
+        <result property="remark"              column="remark"               />
+    </resultMap>
+
+    <sql id="selectCostReportVo">
+        select id, user_id, dept_id, report_type, report_name, report_period, start_date, end_date, 
+        total_cost, item_count, average_cost, report_status, create_by, create_time, update_by, update_time, remark 
+        from tb_cost_report
+    </sql>
+
+    <select id="selectCostReportList" parameterType="com.money.merchant.domain.CostReport" resultMap="CostReportResult">
+        <include refid="selectCostReportVo"/>
+        <where>  
+            <if test="userId != null "> and user_id = #{userId}</if>
+            <if test="deptId != null "> and dept_id = #{deptId}</if>
+            <if test="reportType != null "> and report_type = #{reportType}</if>
+            <if test="reportPeriod != null "> and report_period = #{reportPeriod}</if>
+            <if test="startDate != null "> and start_date &gt;= #{startDate}</if>
+            <if test="endDate != null "> and end_date &lt;= #{endDate}</if>
+            <if test="reportStatus != null "> and report_status = #{reportStatus}</if>
+        </where>
+        order by create_time desc
+    </select>
+    
+    <select id="selectCostReportById" parameterType="Long" resultMap="CostReportResult">
+        <include refid="selectCostReportVo"/>
+        where id = #{id}
+    </select>
+    
+    <select id="selectCostReportByPeriod" resultMap="CostReportResult">
+        <include refid="selectCostReportVo"/>
+        <where>
+            ((user_id = #{userId} and dept_id = #{deptId}) or (user_id = #{userId} and dept_id is null))
+            and report_type = #{reportType}
+            and report_period = #{reportPeriod}
+            and start_date = #{startDate}
+            and end_date = #{endDate}
+        </where>
+        limit 1
+    </select>
+        
+    <insert id="insertCostReport" parameterType="com.money.merchant.domain.CostReport" useGeneratedKeys="true" keyProperty="id">
+        insert into tb_cost_report
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            user_id,
+            <if test="deptId != null">dept_id,</if>
+            <if test="reportType != null">report_type,</if>
+            <if test="reportName != null">report_name,</if>
+            <if test="reportPeriod != null">report_period,</if>
+            <if test="startDate != null">start_date,</if>
+            <if test="endDate != null">end_date,</if>
+            <if test="totalCost != null">total_cost,</if>
+            <if test="itemCount != null">item_count,</if>
+            <if test="averageCost != null">average_cost,</if>
+            <if test="reportStatus != null">report_status,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            #{userId,jdbcType=BIGINT},
+            <if test="deptId != null">#{deptId},</if>
+            <if test="reportType != null">#{reportType},</if>
+            <if test="reportName != null">#{reportName},</if>
+            <if test="reportPeriod != null">#{reportPeriod,jdbcType=VARCHAR},</if>
+            <if test="startDate != null">#{startDate},</if>
+            <if test="endDate != null">#{endDate},</if>
+            <if test="totalCost != null">#{totalCost},</if>
+            <if test="itemCount != null">#{itemCount},</if>
+            <if test="averageCost != null">#{averageCost},</if>
+            <if test="reportStatus != null">#{reportStatus},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null">#{remark},</if>
+         </trim>
+    </insert>
+
+    <update id="updateCostReport" parameterType="com.money.merchant.domain.CostReport">
+        update tb_cost_report
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="deptId != null">dept_id = #{deptId},</if>
+            <if test="reportType != null">report_type = #{reportType},</if>
+            <if test="reportName != null">report_name = #{reportName},</if>
+            <if test="reportPeriod != null">report_period = #{reportPeriod},</if>
+            <if test="startDate != null">start_date = #{startDate},</if>
+            <if test="endDate != null">end_date = #{endDate},</if>
+            <if test="totalCost != null">total_cost = #{totalCost},</if>
+            <if test="itemCount != null">item_count = #{itemCount},</if>
+            <if test="averageCost != null">average_cost = #{averageCost},</if>
+            <if test="reportStatus != null">report_status = #{reportStatus},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteCostReportById" parameterType="Long">
+        delete from tb_cost_report where id = #{id}
+    </delete>
+
+    <delete id="deleteCostReportByIds" parameterType="String">
+        delete from tb_cost_report where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+    
+    <!-- 查询指定日期范围内的成本数据统计 -->
+    <select id="selectCostSummaryByDateRange" resultType="map">
+        SELECT 
+            COUNT(id) as item_count,
+            SUM(amount) as total_cost,
+            AVG(amount) as average_cost
+        FROM 
+            tb_cost
+        WHERE 
+            create_time BETWEEN #{startDate} AND #{endDate}
+            <if test="userId != null">AND (user_id = #{userId} OR create_by = #{userName})</if>
+            <if test="deptId != null">AND dept_id = #{deptId}</if>
+    </select>
+    
+    <!-- 查询指定日期范围内的成本数据统计 -->
+    <select id="getCostStatistics" resultType="map">
+        SELECT 
+            'stats' as orderCount,
+            COUNT(id) as orderCount,
+            SUM(cost_amount) as totalAmount,
+            AVG(cost_amount) as averageAmount,
+            MAX(cost_amount) as maxAmount
+        FROM 
+            tb_cost
+        WHERE 
+            create_time BETWEEN #{startDate} AND #{endDate}
+            <if test="userId != null">AND user_id = #{userId}</if>
+            <if test="deptId != null">AND dept_id = #{deptId}</if>
+    </select>
+    
+    <!-- 获取异常邮费记录 -->
+    <select id="getAbnormalCostRecords" resultType="map">
+        SELECT 
+            id as id, 
+            user_id,
+            dept_id,
+            logistics_company,
+            full_tracking_number,
+            cost_amount,
+            create_time
+        FROM 
+            tb_cost
+        WHERE 
+            create_time BETWEEN #{startDate} AND #{endDate}
+            <if test="userId != null">AND user_id = #{userId}</if>
+            <if test="deptId != null">AND dept_id = #{deptId}</if>
+            AND cost_amount > #{threshold}
+        ORDER BY 
+            cost_amount DESC
+    </select>
+    
+    <!-- 计算特定时间段的邮费总额 -->
+    <select id="calculateTotalCost" resultType="java.math.BigDecimal">
+        SELECT 
+            SUM(cost_amount)
+        FROM 
+            tb_cost
+        WHERE 
+            create_time BETWEEN #{startDate} AND #{endDate}
+            <if test="userId != null">AND user_id = #{userId}</if>
+            <if test="deptId != null">AND dept_id = #{deptId}</if>
+    </select>
+</mapper> 

@@ -1,0 +1,26 @@
+DROP TABLE IF EXISTS `tb_cost`;
+CREATE TABLE `tb_cost` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '邮费ID',
+  `user_id` bigint(20) DEFAULT NULL COMMENT '用户ID',
+  `dept_id` bigint(20) DEFAULT NULL COMMENT '部门ID',
+  `full_tracking_number` varchar(100) DEFAULT NULL COMMENT '完整运单号',
+  `logistics_company` varchar(50) DEFAULT NULL COMMENT '物流公司',
+  `cost_amount` decimal(10,2) DEFAULT 0.00 COMMENT '邮费金额',
+  `shipping_date` datetime DEFAULT NULL COMMENT '发货日期',
+  `destination` varchar(255) DEFAULT NULL COMMENT '目的地',
+  `weight` decimal(10,2) DEFAULT NULL COMMENT '重量(kg)',
+  `package_type` varchar(50) DEFAULT NULL COMMENT '包裹类型',
+  `image_upload_time` datetime DEFAULT NULL COMMENT '图片上传时间',
+  `image_path` varchar(255) DEFAULT NULL COMMENT '图片路径',
+  `status` int(4) DEFAULT 0 COMMENT '状态(0:正常, 1:异常)',
+  `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`id`),
+  INDEX `idx_user_dept` (`user_id`, `dept_id`),
+  INDEX `idx_tracking` (`full_tracking_number`),
+  INDEX `idx_date` (`shipping_date`),
+  INDEX `idx_cost` (`cost_amount`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COMMENT='邮费记录表'; 

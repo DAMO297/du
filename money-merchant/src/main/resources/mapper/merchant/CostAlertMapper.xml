@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.money.merchant.mapper.CostAlertMapper">
+    
+    <resultMap type="com.money.merchant.domain.CostAlert" id="CostAlertResult">
+        <id     property="id"                  column="id"                   />
+        <result property="userId"              column="user_id"              />
+        <result property="deptId"              column="dept_id"              />
+        <result property="thresholdType"       column="threshold_type"       />
+        <result property="thresholdAmount"     column="threshold_amount"     />
+        <result property="alertMethod"         column="alert_method" jdbcType="INTEGER" javaType="java.lang.Integer" />
+        <result property="status"              column="status"               />
+        <result property="lastTriggeredTime"   column="last_triggered_time"  />
+        <result property="createBy"            column="create_by"            />
+        <result property="createTime"          column="create_time"          />
+        <result property="updateBy"            column="update_by"            />
+        <result property="updateTime"          column="update_time"          />
+        <result property="remark"              column="remark"               />
+    </resultMap>
+
+    <sql id="selectCostAlertVo">
+        select id, user_id, dept_id, threshold_type, threshold_amount, 
+        IFNULL(alert_method, 1) as alert_method, status, last_triggered_time,
+        create_by, create_time, update_by, update_time, remark 
+        from tb_cost_alert
+    </sql>
+
+    <select id="selectCostAlertList" parameterType="com.money.merchant.domain.CostAlert" resultMap="CostAlertResult">
+        <include refid="selectCostAlertVo"/>
+        <where>  
+            <if test="userId != null "> and user_id = #{userId}</if>
+            <if test="deptId != null "> and dept_id = #{deptId}</if>
+            <if test="thresholdType != null "> and threshold_type = #{thresholdType}</if>
+            <if test="alertMethod != null "> and alert_method = #{alertMethod}</if>
+            <if test="status != null "> and status = #{status}</if>
+            <if test="lastTriggeredTime != null "> and last_triggered_time = #{lastTriggeredTime}</if>
+        </where>
+        order by create_time desc
+    </select>
+    
+    <select id="selectCostAlertById" parameterType="Long" resultMap="CostAlertResult">
+        <include refid="selectCostAlertVo"/>
+        where id = #{id}
+    </select>
+    
+    <select id="selectActiveAlerts" resultMap="CostAlertResult">
+        <include refid="selectCostAlertVo"/>
+        <where>
+            ((user_id = #{userId} and dept_id = #{deptId}) or (user_id = #{userId} and dept_id is null))
+            and status = 1 <!-- 启用状态 -->
+        </where>
+        order by threshold_type, threshold_amount
+    </select>
+        
+    <insert id="insertCostAlert" parameterType="com.money.merchant.domain.CostAlert" useGeneratedKeys="true" keyProperty="id">
+        insert into tb_cost_alert
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="userId != null">user_id,</if>
+            <if test="deptId != null">dept_id,</if>
+            <if test="thresholdType != null">threshold_type,</if>
+            <if test="thresholdAmount != null">threshold_amount,</if>
+            <if test="alertMethod != null">alert_method,</if>
+            <if test="status != null">status,</if>
+            <if test="lastTriggeredTime != null">last_triggered_time,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="userId != null">#{userId},</if>
+            <if test="deptId != null">#{deptId},</if>
+            <if test="thresholdType != null">#{thresholdType},</if>
+            <if test="thresholdAmount != null">#{thresholdAmount},</if>
+            <if test="alertMethod != null">#{alertMethod},</if>
+            <if test="status != null">#{status},</if>
+            <if test="lastTriggeredTime != null">#{lastTriggeredTime},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null">#{remark},</if>
+         </trim>
+    </insert>
+
+    <update id="updateCostAlert" parameterType="com.money.merchant.domain.CostAlert">
+        update tb_cost_alert
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="deptId != null">dept_id = #{deptId},</if>
+            <if test="thresholdType != null">threshold_type = #{thresholdType},</if>
+            <if test="thresholdAmount != null">threshold_amount = #{thresholdAmount},</if>
+            <if test="alertMethod != null">alert_method = #{alertMethod},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="lastTriggeredTime != null">last_triggered_time = #{lastTriggeredTime},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <update id="updateAlertTriggeredTime">
+        update tb_cost_alert set 
+        last_triggered_time = #{time},
+        update_time = now()
+        where id = #{id}
+    </update>
+
+    <delete id="deleteCostAlertById" parameterType="Long">
+        delete from tb_cost_alert where id = #{id}
+    </delete>
+
+    <delete id="deleteCostAlertByIds" parameterType="String">
+        delete from tb_cost_alert where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper> 
