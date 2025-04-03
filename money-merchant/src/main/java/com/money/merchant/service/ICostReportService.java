@@ -103,4 +103,28 @@ public interface ICostReportService
      * @return 处理结果
      */
     public void scheduleReportGeneration();
+    
+    /**
+     * 测试指定日期范围内是否有数据
+     * 
+     * @param startDate 开始日期
+     * @param endDate 结束日期
+     * @param userId 用户ID
+     * @return 测试结果
+     */
+    public String testDataAvailability(java.util.Date startDate, java.util.Date endDate, Long userId);
+    
+    /**
+     * 检查表结构
+     * 
+     * @return 表结构信息
+     */
+    public String checkTableStructure();
+
+    /**
+     * 获取所有成本记录
+     * 
+     * @return 成本记录列表
+     */
+    public List<Map<String, Object>> getAllCostRecords();
 } 

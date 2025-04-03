@@ -33,13 +33,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectCostReportList" parameterType="com.money.merchant.domain.CostReport" resultMap="CostReportResult">
         <include refid="selectCostReportVo"/>
         <where>  
-            <if test="userId != null "> and user_id = #{userId}</if>
-            <if test="deptId != null "> and dept_id = #{deptId}</if>
-            <if test="reportType != null "> and report_type = #{reportType}</if>
-            <if test="reportPeriod != null "> and report_period = #{reportPeriod}</if>
-            <if test="startDate != null "> and start_date &gt;= #{startDate}</if>
-            <if test="endDate != null "> and end_date &lt;= #{endDate}</if>
-            <if test="reportStatus != null "> and report_status = #{reportStatus}</if>
+            <if test="costReport.userId != null "> and user_id = #{costReport.userId}</if>
+            <if test="costReport.deptId != null "> and dept_id = #{costReport.deptId}</if>
+            <if test="costReport.reportType != null "> and report_type = #{costReport.reportType}</if>
+            <if test="costReport.reportPeriod != null "> and report_period = #{costReport.reportPeriod}</if>
+            <if test="costReport.startDate != null "> and start_date &gt;= #{costReport.startDate}</if>
+            <if test="costReport.endDate != null "> and end_date &lt;= #{costReport.endDate}</if>
+            <if test="costReport.reportStatus != null "> and report_status = #{costReport.reportStatus}</if>
         </where>
         order by create_time desc
     </select>
@@ -139,30 +139,40 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectCostSummaryByDateRange" resultType="map">
         SELECT 
             COUNT(id) as item_count,
-            SUM(amount) as total_cost,
-            AVG(amount) as average_cost
-        FROM 
-            tb_cost
-        WHERE 
-            create_time BETWEEN #{startDate} AND #{endDate}
-            <if test="userId != null">AND (user_id = #{userId} OR create_by = #{userName})</if>
-            <if test="deptId != null">AND dept_id = #{deptId}</if>
-    </select>
-    
-    <!-- 查询指定日期范围内的成本数据统计 -->
-    <select id="getCostStatistics" resultType="map">
-        SELECT 
-            'stats' as orderCount,
-            COUNT(id) as orderCount,
-            SUM(cost_amount) as totalAmount,
-            AVG(cost_amount) as averageAmount,
-            MAX(cost_amount) as maxAmount
+            SUM(cost_amount) as total_cost,
+            AVG(cost_amount) as average_cost
         FROM 
             tb_cost
         WHERE 
             create_time BETWEEN #{startDate} AND #{endDate}
             <if test="userId != null">AND user_id = #{userId}</if>
             <if test="deptId != null">AND dept_id = #{deptId}</if>
+    </select>
+    
+    <!-- 查询指定日期范围内的成本数据统计 -->
+    <select id="getCostStatistics" resultType="map">
+        SELECT 
+            CAST(COUNT(*) AS SIGNED) as orderCount,
+            CAST(IFNULL(SUM(cost_amount), 0) AS DECIMAL(10,2)) as totalAmount,
+            CAST(IFNULL(AVG(cost_amount), 0) AS DECIMAL(10,2)) as averageAmount,
+            CAST(IFNULL(MAX(cost_amount), 0) AS DECIMAL(10,2)) as maxAmount,
+            CAST(IFNULL(MIN(cost_amount), 0) AS DECIMAL(10,2)) as minAmount,
+            CAST(IFNULL(SUM(weight), 0) AS DECIMAL(10,2)) as totalWeight,
+            CAST(IFNULL(AVG(weight), 0) AS DECIMAL(10,2)) as averageWeight,
+            CAST(IFNULL(COUNT(DISTINCT logistics_company), 0) AS SIGNED) as logisticsCompanyCount,
+            CAST(IFNULL(COUNT(DISTINCT recipient_province), 0) AS SIGNED) as provinceCount
+        FROM tb_cost
+        WHERE 1=1
+        <if test="userId != null">
+            AND user_id = #{userId}
+        </if>
+        <if test="deptId != null">
+            AND dept_id = #{deptId}
+        </if>
+        <if test="startDate != null and endDate != null">
+            AND (create_time BETWEEN #{startDate} AND #{endDate}
+            OR DATE(create_time) BETWEEN DATE(#{startDate}) AND DATE(#{endDate}))
+        </if>
     </select>
     
     <!-- 获取异常邮费记录 -->
@@ -175,26 +185,76 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             full_tracking_number,
             cost_amount,
             create_time
-        FROM 
-            tb_cost
-        WHERE 
+        FROM tb_cost
+        <where>
             create_time BETWEEN #{startDate} AND #{endDate}
-            <if test="userId != null">AND user_id = #{userId}</if>
+            AND user_id = #{userId}
             <if test="deptId != null">AND dept_id = #{deptId}</if>
-            AND cost_amount > #{threshold}
-        ORDER BY 
-            cost_amount DESC
+            <if test="threshold != null">
+                <choose>
+                    <when test="minThreshold != null">
+                        AND (cost_amount &gt; #{threshold} OR cost_amount &lt; #{minThreshold})
+                    </when>
+                    <otherwise>
+                        AND cost_amount &gt; #{threshold}
+                    </otherwise>
+                </choose>
+            </if>
+            <if test="threshold == null and minThreshold != null">
+                AND cost_amount &lt; #{minThreshold}
+            </if>
+        </where>
+        ORDER BY cost_amount DESC
     </select>
     
     <!-- 计算特定时间段的邮费总额 -->
     <select id="calculateTotalCost" resultType="java.math.BigDecimal">
         SELECT 
-            SUM(cost_amount)
+            CAST(IFNULL(SUM(cost_amount), 0) AS DECIMAL(10,2))
         FROM 
             tb_cost
+        WHERE 1=1
+        <if test="userId != null">
+            AND user_id = #{userId}
+        </if>
+        <if test="deptId != null">
+            AND dept_id = #{deptId}
+        </if>
+        <if test="startDate != null and endDate != null">
+            AND (create_time BETWEEN #{startDate} AND #{endDate}
+            OR DATE(create_time) BETWEEN DATE(#{startDate}) AND DATE(#{endDate}))
+        </if>
+    </select>
+
+    <!-- 获取cost表信息 -->
+    <select id="getCostTableInfo" resultType="map">
+        SELECT 
+            id,
+            user_id as userId,
+            dept_id as deptId,
+            logistics_company as logisticsCompany,
+            full_tracking_number as fullTrackingNumber,
+            cost_amount as costAmount,
+            create_time as createTime,
+            (SELECT COUNT(*) FROM tb_cost WHERE user_id = #{userId}) as totalCount
+        FROM 
+            tb_cost 
         WHERE 
-            create_time BETWEEN #{startDate} AND #{endDate}
-            <if test="userId != null">AND user_id = #{userId}</if>
-            <if test="deptId != null">AND dept_id = #{deptId}</if>
+            user_id = #{userId}
+        LIMIT 1
+    </select>
+
+    <!-- 直接获取所有成本记录，用于测试 -->
+    <select id="getAllCostRecords" resultType="map">
+        SELECT 
+            id,
+            user_id as userId,
+            dept_id as deptId,
+            logistics_company as logisticsCompany,
+            cost_amount as costAmount,
+            create_time as createTime
+        FROM 
+            tb_cost
+        LIMIT 20
     </select>
 </mapper> 

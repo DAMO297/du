@@ -16,6 +16,11 @@ import com.money.common.utils.DateUtils;
 import com.money.common.utils.SecurityUtils;
 import com.money.common.annotation.DataScope;
 import java.util.ArrayList;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
  * 邮费报告Service业务层处理
@@ -26,8 +31,13 @@ import java.util.ArrayList;
 @Service
 public class CostReportServiceImpl implements ICostReportService 
 {
+    private static final Logger logger = LoggerFactory.getLogger(CostReportServiceImpl.class);
+
     @Autowired
     private CostReportMapper costReportMapper;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     /**
      * 查询邮费报告
@@ -194,103 +204,263 @@ public class CostReportServiceImpl implements ICostReportService
         report.setStartDate(startCal.getTime());
         report.setEndDate(endCal.getTime());
         
+        // 检查是否已存在相同周期的报告
+        CostReport existingReport = costReportMapper.selectCostReportByPeriod(
+            userId, deptId, reportType, report.getReportPeriod(), 
+            report.getStartDate(), report.getEndDate()
+        );
+        
+        if (existingReport != null) {
+            return existingReport;
+        }
+        
         // 3. 调用自定义时间段的报告生成
         return generateCustomReport(report.getStartDate(), report.getEndDate(), userId, deptId);
     }
     
     /**
-     * 生成自定义时间段的邮费报告
-     * 
+     * 生成自定义报告
+     *
      * @param startDate 开始日期
-     * @param endDate 结束日期
-     * @param userId 用户ID
-     * @param deptId 部门ID
-     * @return 生成的报告
+     * @param endDate   结束日期
+     * @param userId    用户ID
+     * @param deptId    部门ID
+     * @return 成本报告
      */
     @Override
-    public CostReport generateCustomReport(java.util.Date startDate, java.util.Date endDate, Long userId, Long deptId)
-    {
-        // 1. 获取时间段内的邮费统计数据
-        Map<String, Object> statisticsMap = costReportMapper.getCostStatistics(userId, deptId, startDate, endDate);
+    public CostReport generateCustomReport(Date startDate, Date endDate, Long userId, Long deptId) {
+        logger.info("生成自定义报告，开始日期: {}, 结束日期: {}, 用户ID: {}, 部门ID: {}", startDate, endDate, userId, deptId);
         
-        // 由于现在统计是Map<String, Object>格式，直接使用第一个条目
-        Map<String, Object> statistics = new HashMap<>();
-        if (statisticsMap != null && !statisticsMap.isEmpty()) {
-            // 使用第一个条目的内容
-            String key = statisticsMap.keySet().iterator().next();
-            Object value = statisticsMap.get(key);
-            // 确保值是Map类型
-            if (value instanceof Map) {
-                @SuppressWarnings("unchecked")
-                Map<String, Object> valueMap = (Map<String, Object>) value;
-                statistics = valueMap;
-            }
-        }
-        
-        // 2. 创建报告对象
-        CostReport report = new CostReport();
-        report.setUserId(userId);
-        report.setDeptId(deptId);
-        report.setStartDate(startDate);
-        report.setEndDate(endDate);
-        report.setGeneratedTime(DateUtils.getNowDate());
-        
-        // 3. 设置报告数据
-        if (statistics != null) {
-            // 设置总费用
-            if (statistics.get("totalAmount") != null) {
-                report.setTotalAmount((BigDecimal) statistics.get("totalAmount"));
+        try {
+            // 确保时间范围包含完整的一天
+            Calendar startCal = Calendar.getInstance();
+            startCal.setTime(startDate);
+            startCal.set(Calendar.HOUR_OF_DAY, 0);
+            startCal.set(Calendar.MINUTE, 0);
+            startCal.set(Calendar.SECOND, 0);
+            startCal.set(Calendar.MILLISECOND, 0);
+            
+            Calendar endCal = Calendar.getInstance();
+            endCal.setTime(endDate);
+            endCal.set(Calendar.HOUR_OF_DAY, 23);
+            endCal.set(Calendar.MINUTE, 59);
+            endCal.set(Calendar.SECOND, 59);
+            endCal.set(Calendar.MILLISECOND, 999);
+            
+            startDate = startCal.getTime();
+            endDate = endCal.getTime();
+            
+            logger.info("调整后的查询时间范围: {} 至 {}", startDate, endDate);
+            
+            // 先查询数据库中是否真的有记录，并显示详细日期
+            try {
+                String diagSql = "SELECT id, user_id, DATE_FORMAT(create_time, '%Y-%m-%d %H:%i:%s') as formatted_time, " +
+                               "create_time as raw_time FROM tb_cost WHERE user_id = ? " +
+                               "ORDER BY create_time";
+                List<Map<String, Object>> diagResults = jdbcTemplate.queryForList(diagSql, userId);
+                
+                logger.info("数据库中此用户的记录总数: {} 条", diagResults.size());
+                if (diagResults.size() > 0) {
+                    logger.info("数据库记录示例 (最多显示5条):");
+                    int count = 0;
+                    for (Map<String, Object> row : diagResults) {
+                        if (count++ < 5) {
+                            logger.info("ID: {}, 用户ID: {}, 格式化时间: {}, 原始时间: {}", 
+                                      row.get("id"), row.get("user_id"), 
+                                      row.get("formatted_time"), row.get("raw_time"));
+                        }
+                    }
+                    
+                    // 检查是否有记录在指定日期范围内
+                    String countSql = "SELECT COUNT(*) FROM tb_cost WHERE user_id = ? AND " +
+                                     "DATE(create_time) BETWEEN DATE(?) AND DATE(?)";
+                    Integer dateOnlyCount = jdbcTemplate.queryForObject(countSql, Integer.class, 
+                                          userId, startDate, endDate);
+                    
+                    logger.info("仅使用日期部分查询范围内记录数: {}", dateOnlyCount);
+                    
+                    // 尝试使用其他表达式
+                    String exactSql = "SELECT COUNT(*) FROM tb_cost WHERE user_id = ? AND " +
+                                    "create_time BETWEEN ? AND ?";
+                    Integer exactCount = jdbcTemplate.queryForObject(exactSql, Integer.class, 
+                                       userId, startDate, endDate);
+                    
+                    logger.info("使用精确时间戳查询范围内记录数: {}", exactCount);
+                    
+                    // 使用字符串格式比较
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                    String startDateStr = sdf.format(startDate);
+                    String endDateStr = sdf.format(endDate);
+                    
+                    String stringSql = "SELECT COUNT(*) FROM tb_cost WHERE user_id = ? AND " +
+                                     "DATE_FORMAT(create_time, '%Y-%m-%d') BETWEEN ? AND ?";
+                    Integer stringCount = jdbcTemplate.queryForObject(stringSql, Integer.class, 
+                                        userId, startDateStr, endDateStr);
+                    
+                    logger.info("使用字符串格式日期查询范围内记录数: {}", stringCount);
+                }
+            } catch (Exception e) {
+                logger.error("诊断查询失败", e);
             }
             
-            // 设置平均单笔费用
-            if (statistics.get("averageAmount") != null) {
-                report.setAverageAmount((BigDecimal) statistics.get("averageAmount"));
+            // 获取时间段内的邮费统计数据
+            Map<String, Object> statistics = costReportMapper.getCostStatistics(userId, deptId, startDate, endDate);
+            logger.info("统计查询结果: {}", statistics);
+            
+            // 检查是否有数据
+            if (statistics == null || 
+                statistics.isEmpty() || 
+                !statistics.containsKey("orderCount") || 
+                statistics.get("orderCount") == null || 
+                (statistics.get("orderCount") instanceof Number && ((Number)statistics.get("orderCount")).intValue() == 0)) {
+                
+                // 尝试直接执行SQL语句查询，跳过MyBatis
+                try {
+                    // 使用字符串格式比较
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                    String startDateStr = sdf.format(startDate);
+                    String endDateStr = sdf.format(endDate);
+                    
+                    String sql = "SELECT COUNT(*) FROM tb_cost WHERE " + 
+                               "DATE_FORMAT(create_time, '%Y-%m-%d') BETWEEN ? AND ? " + 
+                               "AND user_id = ?";
+                    
+                    Integer count = jdbcTemplate.queryForObject(sql, Integer.class, 
+                                   startDateStr, endDateStr, userId);
+                    
+                    logger.info("直接SQL查询结果(使用字符串日期): count = {}", count);
+                    
+                    if (count != null && count > 0) {
+                        logger.info("数据库中有数据，但MyBatis映射返回空结果，使用字符串查询方法获取统计");
+                        // 直接执行SQL获取统计数据
+                        String statsSql = 
+                            "SELECT " +
+                            "  COUNT(*) as orderCount, " +
+                            "  IFNULL(SUM(cost_amount), 0) as totalAmount, " +
+                            "  IFNULL(AVG(cost_amount), 0) as averageAmount, " +
+                            "  IFNULL(MAX(cost_amount), 0) as maxAmount, " +
+                            "  IFNULL(MIN(cost_amount), 0) as minAmount " +
+                            "FROM tb_cost " +
+                            "WHERE DATE_FORMAT(create_time, '%Y-%m-%d') BETWEEN ? AND ? " +
+                            "AND user_id = ?";
+                        
+                        statistics = jdbcTemplate.queryForMap(statsSql, startDateStr, endDateStr, userId);
+                        logger.info("直接SQL查询统计结果: {}", statistics);
+                    } else {
+                        logger.info("指定时间范围内没有数据，返回null");
+                        return null; // 没有数据则返回null
+                    }
+                } catch (Exception e) {
+                    logger.error("直接执行SQL查询时出错", e);
+                    logger.info("指定时间范围内没有数据，返回null");
+                    return null;
+                }
             }
             
-            // 设置最高单笔费用
-            if (statistics.get("maxAmount") != null) {
-                report.setMaxAmount((BigDecimal) statistics.get("maxAmount"));
+            // 创建报告对象
+            CostReport report = new CostReport();
+            report.setUserId(userId);
+            report.setDeptId(deptId);
+            report.setReportType(1); // 1表示正常报告
+            report.setReportPeriod(1); // 1表示自定义周期
+            report.setStartDate(startDate);
+            report.setEndDate(endDate);
+            report.setCreateTime(new Date());
+            report.setReportStatus(0); // 0表示正常状态
+            
+            // 设置报告名称
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+            report.setReportName("成本报告 - " + dateFormat.format(startDate) + " 至 " + dateFormat.format(endDate));
+            
+            // 设置统计数据（使用安全方法获取值）
+            report.setTotalCost(getSafeDecimal(statistics, "totalAmount", BigDecimal.ZERO));
+            report.setAverageCost(getSafeDecimal(statistics, "averageAmount", BigDecimal.ZERO));
+            report.setItemCount(getSafeInt(statistics, "orderCount", 0));
+            
+            // 其他统计数据可以存储在report_content中
+            if (statistics.containsKey("totalWeight") || 
+                statistics.containsKey("averageWeight") || 
+                statistics.containsKey("logisticsCompanyCount") || 
+                statistics.containsKey("provinceCount")) {
+                try {
+                    Map<String, Object> extraStats = new HashMap<>();
+                    if (statistics.containsKey("totalWeight")) {
+                        extraStats.put("totalWeight", statistics.get("totalWeight"));
+                    }
+                    if (statistics.containsKey("averageWeight")) {
+                        extraStats.put("averageWeight", statistics.get("averageWeight"));
+                    }
+                    if (statistics.containsKey("logisticsCompanyCount")) {
+                        extraStats.put("logisticsCompanyCount", statistics.get("logisticsCompanyCount"));
+                    }
+                    if (statistics.containsKey("provinceCount")) {
+                        extraStats.put("provinceCount", statistics.get("provinceCount"));
+                    }
+                    report.setReportContent(JSON.toJSONString(extraStats));
+                } catch (Exception e) {
+                    logger.warn("设置额外统计数据到reportContent时出错", e);
+                }
             }
             
-            // 设置订单总数
-            if (statistics.get("orderCount") != null) {
-                report.setOrderCount(((Long) statistics.get("orderCount")).intValue());
+            // 保存报告
+            int rows = costReportMapper.insertCostReport(report);
+            if (rows <= 0) {
+                logger.error("保存报告失败");
+                throw new RuntimeException("保存报告失败");
+            }
+            
+            logger.info("报告生成成功: {}", report);
+            return report;
+        } catch (Exception e) {
+            logger.error("生成报告出错", e);
+            throw new RuntimeException("生成报告时发生错误: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * 安全获取BigDecimal值
+     */
+    private BigDecimal getSafeDecimal(Map<String, Object> map, String key, BigDecimal defaultValue) {
+        if (map == null || !map.containsKey(key) || map.get(key) == null) {
+            return defaultValue;
+        }
+        
+        Object value = map.get(key);
+        if (value instanceof BigDecimal) {
+            return (BigDecimal) value;
+        } else if (value instanceof Number) {
+            return new BigDecimal(value.toString());
+        } else {
+            try {
+                return new BigDecimal(value.toString());
+            } catch (Exception e) {
+                logger.warn("无法将值转换为BigDecimal: " + value, e);
+                return defaultValue;
             }
         }
-        
-        // 4. 获取异常邮费记录
-        // 这里可以根据业务规则设置阈值，比如超过平均值的150%
-        BigDecimal threshold = BigDecimal.ZERO;
-        if (report.getAverageAmount() != null) {
-            threshold = report.getAverageAmount().multiply(new BigDecimal("1.5"));
+    }
+    
+    /**
+     * 安全获取Integer值
+     */
+    private Integer getSafeInt(Map<String, Object> map, String key, Integer defaultValue) {
+        if (map == null || !map.containsKey(key) || map.get(key) == null) {
+            return defaultValue;
         }
         
-        Map<String, Map<String, Object>> abnormalRecordsMap = costReportMapper.getAbnormalCostRecords(
-                userId, deptId, startDate, endDate, threshold);
-        
-        List<Map<String, Object>> abnormalRecords = new ArrayList<>();
-        if (abnormalRecordsMap != null) {
-            abnormalRecords.addAll(abnormalRecordsMap.values());
+        Object value = map.get(key);
+        if (value instanceof Integer) {
+            return (Integer) value;
+        } else if (value instanceof Number) {
+            return ((Number) value).intValue();
+        } else {
+            try {
+                return Integer.parseInt(value.toString());
+            } catch (Exception e) {
+                logger.warn("无法将值转换为Integer: " + value, e);
+                return defaultValue;
+            }
         }
-        
-        // 设置异常记录数
-        if (abnormalRecords != null) {
-            report.setAbnormalCount(abnormalRecords.size());
-        }
-        
-        // 5. 整合报告内容
-        Map<String, Object> reportContent = new HashMap<>();
-        reportContent.put("statistics", statistics);
-        reportContent.put("abnormalRecords", abnormalRecords);
-        report.setReportContent(JSON.toJSONString(reportContent));
-        
-        // 6. 生成优化建议
-        report.setOptimizationSuggestions(generateOptimizationSuggestions(report));
-        
-        // 7. 保存报告
-        insertCostReport(report);
-        
-        return report;
     }
     
     /**
@@ -400,24 +570,23 @@ public class CostReportServiceImpl implements ICostReportService
         
         // 1. 成本概览
         suggestions.append("1. 成本概览\n");
-        suggestions.append("   - 报告期间总邮费：").append(report.getTotalAmount()).append("\n");
-        suggestions.append("   - 平均单笔邮费：").append(report.getAverageAmount()).append("\n");
-        suggestions.append("   - 最高单笔邮费：").append(report.getMaxAmount()).append("\n");
+        suggestions.append("   - 报告期间总邮费：").append(report.getTotalCost()).append("\n");
+        suggestions.append("   - 平均单笔邮费：").append(report.getAverageCost()).append("\n");
         suggestions.append("   - 异常高额邮费记录：").append(report.getAbnormalCount()).append("笔\n\n");
         
         // 2. 成本分析
         suggestions.append("2. 成本分析\n");
         
         // 计算成本相关指标
-        if (report.getOrderCount() != null && report.getOrderCount() > 0 && report.getTotalAmount() != null) {
-            BigDecimal averageCost = report.getTotalAmount().divide(new BigDecimal(report.getOrderCount()), 2, RoundingMode.HALF_UP);
+        if (report.getItemCount() != null && report.getItemCount() > 0 && report.getTotalCost() != null) {
+            BigDecimal averageCost = report.getTotalCost().divide(new BigDecimal(report.getItemCount()), 2, RoundingMode.HALF_UP);
             suggestions.append("   - 平均每笔订单邮费：").append(averageCost).append("\n");
         }
         
-        if (report.getAbnormalCount() != null && report.getOrderCount() != null && report.getOrderCount() > 0) {
+        if (report.getAbnormalCount() != null && report.getItemCount() != null && report.getItemCount() > 0) {
             BigDecimal abnormalRate = new BigDecimal(report.getAbnormalCount())
                                     .multiply(new BigDecimal(100))
-                                    .divide(new BigDecimal(report.getOrderCount()), 2, RoundingMode.HALF_UP);
+                                    .divide(new BigDecimal(report.getItemCount()), 2, RoundingMode.HALF_UP);
             suggestions.append("   - 异常邮费比例：").append(abnormalRate).append("%\n\n");
         }
         
@@ -436,11 +605,12 @@ public class CostReportServiceImpl implements ICostReportService
         suggestions.append("   b) 物流选择优化\n");
         suggestions.append("      - 对比不同物流公司的价格和服务水平，选择最优性价比\n");
         suggestions.append("      - 考虑与主要物流公司签订年度合约，获取批量折扣\n");
-        suggestions.append("      - 针对不同重量和目的地选择最经济的物流方式\n\n");
-        
-        suggestions.append("   c) 包装优化\n");
+        suggestions.append("      - 针对不同重量和目的地选择最经济的物流方式\n");
         suggestions.append("      - 优化包装材料和尺寸，减少体积重和实际重量\n");
         suggestions.append("      - 使用轻量化包装材料，降低重量相关费用\n");
+        suggestions.append("      - 标准化包装规格，提高物流效率\n\n");
+        
+        suggestions.append("   c) 包装优化\n");
         suggestions.append("      - 标准化包装规格，提高物流效率\n\n");
         
         suggestions.append("   d) 发货策略优化\n");
@@ -452,12 +622,130 @@ public class CostReportServiceImpl implements ICostReportService
         suggestions.append("4. 预期节约空间\n");
         
         // 假设通过优化可以节约10%的成本
-        if (report.getTotalAmount() != null) {
-            BigDecimal savingEstimate = report.getTotalAmount().multiply(new BigDecimal("0.1")).setScale(2, RoundingMode.HALF_UP);
+        if (report.getTotalCost() != null) {
+            BigDecimal savingEstimate = report.getTotalCost().multiply(new BigDecimal("0.1")).setScale(2, RoundingMode.HALF_UP);
             suggestions.append("   - 预计通过以上优化措施，可节约邮费约：").append(savingEstimate).append("\n");
             suggestions.append("   - 重点优化异常高额邮费记录，可快速实现成本降低\n");
         }
         
         return suggestions.toString();
+    }
+
+    /**
+     * 测试指定日期范围内是否有数据
+     * 
+     * @param startDate 开始日期
+     * @param endDate 结束日期
+     * @param userId 用户ID
+     * @return 测试结果
+     */
+    @Override
+    public String testDataAvailability(java.util.Date startDate, java.util.Date endDate, Long userId) 
+    {
+        StringBuilder result = new StringBuilder();
+        
+        // 调整日期时间，确保包含完整的天
+        Calendar startCal = Calendar.getInstance();
+        startCal.setTime(startDate);
+        startCal.set(Calendar.HOUR_OF_DAY, 0);
+        startCal.set(Calendar.MINUTE, 0);
+        startCal.set(Calendar.SECOND, 0);
+        startCal.set(Calendar.MILLISECOND, 0);
+        
+        Calendar endCal = Calendar.getInstance();
+        endCal.setTime(endDate);
+        endCal.set(Calendar.HOUR_OF_DAY, 23);
+        endCal.set(Calendar.MINUTE, 59);
+        endCal.set(Calendar.SECOND, 59);
+        endCal.set(Calendar.MILLISECOND, 999);
+        
+        startDate = startCal.getTime();
+        endDate = endCal.getTime();
+        
+        result.append("测试时间范围: ").append(startDate).append(" 到 ").append(endDate).append("\n");
+        result.append("用户ID: ").append(userId).append("\n\n");
+        
+        try {
+            // 按时间范围和用户ID查询
+            BigDecimal totalByBoth = costReportMapper.calculateTotalCost(userId, null, startDate, endDate);
+            result.append("按时间范围和用户ID查询总成本: ").append(totalByBoth).append("\n\n");
+            
+            // 使用统计查询
+            Map<String, Object> statistics = costReportMapper.getCostStatistics(userId, null, startDate, endDate);
+            if (statistics != null) {
+                result.append("统计查询结果:\n");
+                for (Map.Entry<String, Object> entry : statistics.entrySet()) {
+                    result.append("  ").append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
+                }
+            } else {
+                result.append("统计查询结果: null\n");
+            }
+            
+            // 获取所有记录
+            List<Map<String, Object>> allRecords = getAllCostRecords();
+            result.append("\n所有成本记录 (").append(allRecords.size()).append(" 条):\n");
+            
+            if (allRecords != null && allRecords.size() > 0) {
+                int count = 0;
+                for (Map<String, Object> record : allRecords) {
+                    result.append("记录 ").append(++count).append(":\n");
+                    for (Map.Entry<String, Object> entry : record.entrySet()) {
+                        result.append("  ").append(entry.getKey()).append(": ").append(entry.getValue())
+                            .append(entry.getValue() != null ? " (类型: " + entry.getValue().getClass().getName() + ")" : "")
+                            .append("\n");
+                    }
+                    result.append("\n");
+                    
+                    if (count >= 5) {
+                        result.append("... 更多记录省略 ...\n");
+                        break;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            result.append("执行查询出错: ").append(e.getMessage()).append("\n");
+            result.append("错误详情: ").append(e.toString()).append("\n");
+            StackTraceElement[] stackTrace = e.getStackTrace();
+            for (int i = 0; i < Math.min(5, stackTrace.length); i++) {
+                result.append("  at ").append(stackTrace[i]).append("\n");
+            }
+        }
+        
+        return result.toString();
+    }
+
+    /**
+     * 检查表结构
+     * 
+     * @return 表结构信息
+     */
+    public String checkTableStructure() {
+        StringBuilder result = new StringBuilder("表结构信息:");
+        
+        try {
+            // 使用一个简单的方法来查询表信息
+            Map<String, Object> tableInfo = costReportMapper.getCostTableInfo(1L);
+            if (tableInfo != null && !tableInfo.isEmpty()) {
+                result.append("\n可用字段 (来自示例记录):\n");
+                for (Map.Entry<String, Object> entry : tableInfo.entrySet()) {
+                    result.append("  ").append(entry.getKey());
+                    if (entry.getValue() != null) {
+                        result.append(" (类型: ").append(entry.getValue().getClass().getSimpleName()).append(")");
+                    }
+                    result.append("\n");
+                }
+            } else {
+                result.append("\n未找到表记录，无法获取字段信息。");
+            }
+        } catch (Exception e) {
+            result.append("\n获取表结构失败: ").append(e.getMessage());
+        }
+        
+        return result.toString();
+    }
+
+    @Override
+    public List<Map<String, Object>> getAllCostRecords() {
+        return costReportMapper.getAllCostRecords();
     }
 }

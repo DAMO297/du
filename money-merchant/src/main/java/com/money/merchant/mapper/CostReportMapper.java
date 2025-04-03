@@ -5,6 +5,7 @@ import java.util.Map;
 import java.math.BigDecimal;
 import java.util.Date;
 import org.apache.ibatis.annotations.MapKey;
+import org.apache.ibatis.annotations.Param;
 import com.money.merchant.domain.CostReport;
 
 /**
@@ -29,7 +30,7 @@ public interface CostReportMapper
      * @param costReport 邮费报告
      * @return 邮费报告集合
      */
-    public List<CostReport> selectCostReportList(CostReport costReport);
+    public List<CostReport> selectCostReportList(@Param("costReport") CostReport costReport);
 
     /**
      * 新增邮费报告
@@ -72,7 +73,12 @@ public interface CostReportMapper
      * @param endDate 结束日期
      * @return 邮费总额
      */
-    public BigDecimal calculateTotalCost(Long userId, Long deptId, Date startDate, Date endDate);
+    public BigDecimal calculateTotalCost(
+        @Param("userId") Long userId, 
+        @Param("deptId") Long deptId, 
+        @Param("startDate") Date startDate, 
+        @Param("endDate") Date endDate
+    );
     
     /**
      * 获取特定时间段的邮费统计
@@ -83,8 +89,12 @@ public interface CostReportMapper
      * @param endDate 结束日期
      * @return 统计结果，包含总额、平均值、最大值、订单数等
      */
-    @MapKey("orderCount")
-    public Map<String, Object> getCostStatistics(Long userId, Long deptId, Date startDate, Date endDate);
+    public Map<String, Object> getCostStatistics(
+        @Param("userId") Long userId,
+        @Param("deptId") Long deptId,
+        @Param("startDate") Date startDate,
+        @Param("endDate") Date endDate
+    );
     
     /**
      * 获取异常邮费记录
@@ -93,9 +103,53 @@ public interface CostReportMapper
      * @param deptId 部门ID
      * @param startDate 开始日期
      * @param endDate 结束日期
-     * @param threshold 阈值金额
+     * @param threshold 最大阈值金额
+     * @param minThreshold 最小阈值金额
      * @return 异常邮费记录列表
      */
     @MapKey("id")
-    public Map<String, Map<String, Object>> getAbnormalCostRecords(Long userId, Long deptId, Date startDate, Date endDate, BigDecimal threshold);
+    public Map<String, Map<String, Object>> getAbnormalCostRecords(
+        @Param("userId") Long userId,
+        @Param("deptId") Long deptId,
+        @Param("startDate") Date startDate,
+        @Param("endDate") Date endDate,
+        @Param("threshold") BigDecimal threshold,
+        @Param("minThreshold") BigDecimal minThreshold
+    );
+
+    /**
+     * 根据周期查询邮费报告
+     *
+     * @param userId 用户ID
+     * @param deptId 部门ID
+     * @param reportType 报告类型
+     * @param reportPeriod 报告周期
+     * @param startDate 开始日期
+     * @param endDate 结束日期
+     * @return 邮费报告
+     */
+    public CostReport selectCostReportByPeriod(
+        @Param("userId") Long userId,
+        @Param("deptId") Long deptId,
+        @Param("reportType") Integer reportType,
+        @Param("reportPeriod") Integer reportPeriod,
+        @Param("startDate") Date startDate,
+        @Param("endDate") Date endDate
+    );
+
+    /**
+     * 获取cost表记录数和示例记录
+     * 
+     * @param userId 用户ID
+     * @return 表信息
+     */
+    @MapKey("id")
+    public Map<String, Object> getCostTableInfo(@Param("userId") Long userId);
+
+    /**
+     * 获取所有成本记录，用于测试
+     * 
+     * @return 成本记录列表
+     */
+    public List<Map<String, Object>> getAllCostRecords();
 } 
