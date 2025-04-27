@@ -87,6 +87,18 @@ spring:
         max-active: 8
         # #连接池最大阻塞等待时间（使用负值表示没有限制）
         max-wait: -1ms
+  # 缓存配置
+  cache:
+    type: redis
+    redis:
+      # 缓存过期时间，单位秒
+      time-to-live: 3600
+      # 是否缓存空值
+      cache-null-values: true
+      # 是否使用前缀
+      use-key-prefix: true
+      # 键前缀
+      key-prefix: "good:"
 
 # token配置
 token:

@@ -188,6 +188,8 @@
                 <version>${money.version}</version>
             </dependency>
 
+            <!-- Spring AI MCP Server -->
+
         </dependencies>
     </dependencyManagement>
 

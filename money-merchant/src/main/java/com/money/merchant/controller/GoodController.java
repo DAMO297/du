@@ -4,6 +4,7 @@ import java.util.List;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -80,6 +81,10 @@ public class GoodController extends BaseController
     {
         good.setDeptId(getDeptId());
         good.setUserId(getUserId());
+        // 设置默认状态为returned
+        if (good.getStatus() == null) {
+            good.setStatus("returned");
+        }
         return toAjax(goodService.insertGood(good));
     }
 
@@ -110,6 +115,7 @@ public class GoodController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('merchant:good:query')")
     @GetMapping("/inventory-alert")
+    @Cacheable(value = "inventoryAlert", key = "#threshold")
     public AjaxResult getInventoryAlert(@RequestParam(value = "threshold", defaultValue = "5") Integer threshold)
     {
         // 获取库存低于阈值的商品
@@ -130,10 +136,10 @@ public class GoodController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('merchant:good:query')")
     @GetMapping("/popular-goods")
+    @Cacheable(value = "popularGoods", key = "#limit")
     public AjaxResult getPopularGoods(@RequestParam(value = "limit", defaultValue = "10") Integer limit)
     {
         // 获取价格较高的前N个商品作为热门商品
-        // 实际场景可能需要基于销量等其他因素
         Good queryParam = new Good();
         List<Good> allGoods = goodService.selectGoodList(queryParam);
         
@@ -216,6 +222,7 @@ public class GoodController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('merchant:good:query')")
     @GetMapping("/profit-analysis")
+    @Cacheable(value = "profitAnalysis")
     public AjaxResult getProfitAnalysis()
     {
         Good queryParam = new Good();
@@ -251,14 +258,13 @@ public class GoodController extends BaseController
                 detail.put("cost", cost);
                 detail.put("profit", profit);
                 detail.put("profitRate", profitRate);
-                
                 profitDetails.add(detail);
             }
         }
         
-        java.math.BigDecimal overallProfitRate = java.math.BigDecimal.ZERO;
+        java.math.BigDecimal averageProfitRate = java.math.BigDecimal.ZERO;
         if (totalRevenue.compareTo(java.math.BigDecimal.ZERO) > 0) {
-            overallProfitRate = totalProfit.divide(totalRevenue, 4, java.math.RoundingMode.HALF_UP)
+            averageProfitRate = totalProfit.divide(totalRevenue, 4, java.math.RoundingMode.HALF_UP)
                     .multiply(new java.math.BigDecimal("100"));
         }
         
@@ -266,7 +272,7 @@ public class GoodController extends BaseController
                 .put("totalProfit", totalProfit)
                 .put("totalRevenue", totalRevenue)
                 .put("totalCost", totalCost)
-                .put("overallProfitRate", overallProfitRate)
+                .put("averageProfitRate", averageProfitRate)
                 .put("profitDetails", profitDetails);
     }
 }
